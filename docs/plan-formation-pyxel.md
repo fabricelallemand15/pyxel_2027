@@ -71,6 +71,7 @@ Le règlement de la Nuit du Code impose par ailleurs une fenêtre de jeu de 128 
 La formation retient **256 × 256 pixels** :
 
 - un écran de 256 × 256 pixels correspond à 32 × 32 tuiles ; le niveau de référence en occupe 64 × 32 et défile à partir de la leçon 9 ;
+- les textes affichés à l'écran sont en ASCII : la police intégrée ne dessine ni les accents ni la cédille, ce qui impose le mot « Chapitre » à la place de « Leçon » dans la fenêtre du jeu ;
 - le décor peut comporter plusieurs plateformes étagées sans être à l'étroit ;
 - les sprites de 8 × 8 pixels restent petits par rapport à la fenêtre, ce qui donne un rendu lisible.
 
@@ -908,7 +909,7 @@ def update_gameover(self):
 - `update_play()` teste la victoire avant les ennemis, avec `return`, pour que la dernière pièce l'emporte sur un contact simultané ;
 - `pyxel.stop()` coupe la musique à la victoire comme à la défaite ;
 - interface en deux lignes seulement, « Score : n » et « Restantes : n », dessinées après la remise à zéro de la caméra ;
-- textes dessinés sans accent, la police intégrée de Pyxel ne contenant que l’ASCII ;
+- textes dessinés sans accent ni cédille, la police intégrée de Pyxel ne contenant que l’ASCII (§7.10 de `cours/AGENTS.md`) ;
 - `bltm()` reçoit la couleur 0 comme clé de transparence, pour que les cases vides laissent voir le fond ;
 - écrans de titre et de fin centrés avec la règle des 4 pixels par caractère, colonne `(256 - 4 * len(texte)) // 2` ;
 - `draw_gameover()` et `draw_win()` réutilisent `draw_play()` pour garder le décor figé derrière le message ;

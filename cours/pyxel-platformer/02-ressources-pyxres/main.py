@@ -78,7 +78,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 2 - ressources",
+            title="Chapitre 2 - ressources",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -108,7 +108,7 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 2 - ressources",
+            "Chapitre 2 - ressources",
             TEXT_COLOR,
         )
         pyxel.text(

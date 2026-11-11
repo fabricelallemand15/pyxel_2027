@@ -145,7 +145,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 3 - joueur",
+            title="Chapitre 3 - joueur",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -171,20 +171,21 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 3 - joueur",
+            "Chapitre 3 - joueur",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer",
+            "Gauche et droite : marcher",
             TEXT_COLOR,
         )
 
         self.player.draw()
 
 
-Game()</code></pre>
+Game()
+</code></pre>
     <p>Le résultat attendu :</p>
     <ul>
       <li>une fenêtre de 256 × 256 pixels ;</li>
@@ -264,6 +265,11 @@ elif pyxel.btn(pyxel.KEY_RIGHT):
     <h3>Dessiner le joueur</h3>
     <p>La méthode <code>Player.draw()</code> ne change pas. Elle utilise toujours <code>pyxel.blt()</code> avec la tuile (0, 0) de la banque d’images.</p>
     <p>Le dessin ne dépend que de la position courante. C’est la raison pour laquelle <code>update()</code> peut être réécrite sans toucher à <code>draw()</code>.</p>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Les accents à l’écran</p>
+      <p>Le texte « Gauche et droite : marcher » évite le mot « flèches » : la police de Pyxel ne dessine pas le è (voir la leçon 1).</p>
+    </aside>
 
     <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
     <div class="table-wrapper">

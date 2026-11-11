@@ -112,7 +112,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 5 - niveau",
+            title="Chapitre 5 - niveau",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -146,13 +146,13 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 5 - niveau",
+            "Chapitre 5 - niveau",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(

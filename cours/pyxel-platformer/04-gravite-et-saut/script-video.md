@@ -157,7 +157,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 4 - gravité",
+            title="Chapitre 4 - chute et saut",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -183,13 +183,13 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 4 - gravité",
+            "Chapitre 4 - chute et saut",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
 

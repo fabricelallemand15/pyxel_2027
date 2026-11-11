@@ -234,7 +234,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 10 - interface",
+            title="Chapitre 10 - interface",
         )
 
         self.scene = SCENE_TITLE

@@ -119,7 +119,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 1 - Boucle de jeu",
+            title="Chapitre 1 - Boucle de jeu",
         )
 
         self.player = Player(
@@ -147,7 +147,7 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 1 - boucle de jeu",
+            "Chapitre 1 - boucle de jeu",
             TEXT_COLOR,
         )
         pyxel.text(
@@ -160,7 +160,8 @@ class Game:
         self.player.draw()
 
 
-Game()</code></pre>
+Game()
+</code></pre>
 <p>Le résultat attendu est le suivant :</p>
 <ul>
   <li>une fenêtre de 256 × 256 pixels ;</li>
@@ -278,7 +279,7 @@ elif self.x + self.width &gt;= pyxel.width:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 1 - Boucle de jeu",
+            title="Chapitre 1 - Boucle de jeu",
         )</code></pre>
 <p>La classe <code>Game</code> représente le jeu dans son ensemble.</p>
 <p>Elle est responsable de :</p>
@@ -341,7 +342,7 @@ elif self.x + self.width &gt;= pyxel.width:
 <pre><code class="language-python">pyxel.text(
     4,
     4,
-    "Leçon 1 - boucle de jeu",
+    "Chapitre 1 - boucle de jeu",
     TEXT_COLOR,
 )
 pyxel.text(
@@ -351,6 +352,12 @@ pyxel.text(
     TEXT_COLOR,
 )</code></pre>
 <p><code>pyxel.text()</code> affiche une chaîne à une position donnée.</p>
+<aside class="callout callout-note">
+  <p class="callout-title">Ni accents, ni cédille à l’écran</p>
+  <p>La police intégrée de Pyxel ne contient que les caractères ASCII imprimables. Une lettre accentuée ou une cédille n’est pas dessinée : « Leçon » s’afficherait « Lecon », et « flèches » s’afficherait « flches ».</p>
+  <p>Les textes de l’interface évitent donc les accents. Le mot <code>Chapitre</code> remplace <code>Leçon</code>, le mot <code>Restantes</code> remplace <code>Pièces</code>, et les commandes s’écrivent <code>Gauche et droite : marcher</code>. Toutes les leçons suivent cette règle.</p>
+  <p>Le titre passé à <code>pyxel.init()</code> est dessiné par le système et non par cette police ; il reprend pourtant le même texte, pour que le code reste cohérent.</p>
+</aside>
 <p><code>pyxel.frame_count</code> est un compteur de frames fourni par Pyxel. Il augmente au cours de l’exécution et pourra être utilisé pour créer des animations.</p>
 <h3>Dessiner le joueur</h3>
 <pre><code class="language-python">self.player.draw()</code></pre>
