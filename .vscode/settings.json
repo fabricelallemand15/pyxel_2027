@@ -3,5 +3,8 @@
   "rust-analyzer.cargo.cfgs": ["pyxel_core"],
   "rust-analyzer.cargo.features": ["pyxel-binding/sdl2_dynamic"],
   "rust-analyzer.cargo.target": "wasm32-unknown-emscripten",
-  "rust-analyzer.linkedProjects": ["crates/Cargo.toml"]
+  "rust-analyzer.linkedProjects": [
+    "crates/Cargo.toml"
+  ],
+  "python-envs.defaultEnvManager": "ms-python.python:pyenv"
 }
