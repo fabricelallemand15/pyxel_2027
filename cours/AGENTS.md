@@ -54,7 +54,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 3 — Joueur et contrôles | `03-joueur/` | produite |
 | 4 — Gravité et saut | `04-gravite-et-saut/` | produite |
 | 5 — Niveau et tilemap | `05-tilemap/` | produite |
-| 6 — Collisions avec la tilemap | `06-collisions/` | à produire |
+| 6 — Collisions avec la tilemap | `06-collisions/` | produite |
 | 7 — Plusieurs types d’objets | `07-objets/` | à produire |
 | 8 — Règles du jeu | `08-regles-du-jeu/` | à produire |
 | 9 — Animation et caméra | `09-animation-et-camera/` | à produire |
@@ -192,15 +192,29 @@ Game()
 | Haut du sol, ligne de tuiles | 28 | Niveau de référence |
 | Coordonnée `GROUND_Y` | 224 | `28 × 8` |
 | Position verticale du joueur | 216 | `224 - 8` |
-| Position horizontale du joueur | 40 | Colonne 5 |
+| Position horizontale du joueur, leçons 3 à 5 | 40 | Colonne 5 |
+| Position horizontale du joueur, à partir de la leçon 6 | 8 | Place devant le joueur |
 | Vitesse horizontale du joueur | 2 pixels par image | Contrôles au clavier |
 | Gravité | 1 pixel par image² | Accélération verticale |
 | Vitesse de saut | −11 pixels par image | Valeur négative, vers le haut |
 | Hauteur du saut | environ 55 pixels | Mesurée au sommet de la trajectoire |
 | Tuiles solides | (0, 1), (1, 1), (2, 1) | Sol, remplissage, plateforme |
 | Case vide de la tilemap | (5, 5) | Zone transparente de la banque |
+| Signature des collisions | `collide(x, y, w, h, dx, dy, walls)` | Renvoie le déplacement corrigé |
+| Position du joueur sur la première plateforme | 176 | Dessus de la ligne 23 |
+| Arrêt du saut sous la première plateforme | 192 | Dessous de la ligne 23 |
 
 Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
+
+### 7.5. Collisions
+
+- Le joueur est décrit par un rectangle : `x`, `y`, `width`, `height`.
+- Aucun objet ne modifie sa position avant d’avoir obtenu l’autorisation du niveau.
+- La classe `Level` expose une méthode `move_player(x, y, dx, dy)` qui appelle `self.tilemap.collide()` et renvoie un couple `(dx, dy)` corrigé, jamais une position.
+- Les dimensions transmises viennent des constantes `PLAYER_WIDTH` et `PLAYER_HEIGHT`.
+- `SOLID_TILES` est une liste de tuiles de la banque d’images, pas de cases du niveau.
+- L’état « au sol » se déduit du résultat : un déplacement vertical annulé alors que l’objet tombait.
+- `is_solid()` n’est pas conservée après la leçon 6 : `collide()` couvre le besoin.
 
 ## 8. Conventions des ressources
 

@@ -66,7 +66,7 @@
     <aside class="callout callout-note">
       <p class="callout-title">Aucune collision pour l’instant</p>
       <p>Le programme sait maintenant si une case est solide, mais il ne s’en sert pas encore pour arrêter le joueur. Le personnage traverse toujours les plateformes.</p>
-      <p>Cette séparation est volontaire : la leçon 6 utilisera <code>is_solid()</code> pour corriger les déplacements.</p>
+      <p>Cette séparation est volontaire : la leçon 6 confie cette vérification à <code>collide()</code>, qui s’appuie sur la même liste de tuiles solides, et corrige enfin les déplacements.</p>
     </aside>
 
     <h2 id="le-code-complet">Le code complet</h2>
@@ -442,7 +442,7 @@ pyxel.text(
       <li><code>is_solid()</code> répond à une question, sans modifier le jeu.</li>
     </ul>
 
-    <p>Dans la prochaine leçon, cette question est utilisée pour corriger les déplacements : le joueur s’arrête sur les plateformes au lieu de les traverser.</p>
+    <p>Dans la prochaine leçon, la liste des tuiles solides sert à corriger les déplacements : le joueur s’arrête sur les plateformes au lieu de les traverser.</p>
 
   </article>
 </body>
