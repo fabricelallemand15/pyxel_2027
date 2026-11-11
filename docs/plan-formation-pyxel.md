@@ -66,6 +66,16 @@ pyxel.load("res.pyxres")
 
 Le nom `res.pyxres` est la convention de référence du cours. Si l'interface Capytale impose un autre nom, seul le nom passé à `pyxel.load()` devra changer ; la règle d'un seul fichier `.pyxres` dans le même dossier reste inchangée.
 
+Le règlement de la Nuit du Code impose par ailleurs une fenêtre de jeu de 128 × 128 ou de 256 × 256 pixels.
+
+La formation retient **128 × 128 pixels** :
+
+- le niveau de référence occupe 16 × 16 tuiles et remplit exactement l'écran ;
+- la caméra devient réellement utile lorsqu'un niveau plus large que l'écran est construit ;
+- les ressources restent petites et rapides à dessiner.
+
+La variante 256 × 256 est mentionnée dans les leçons comme une alternative conforme au règlement. Elle ne change que les dimensions de l'écran et le nombre de tuiles visibles.
+
 ### 2.2. POO simplifiée
 
 La formation utilise la POO dès le début, mais sans constructions avancées.
@@ -207,41 +217,50 @@ Le jeu devra comporter au minimum :
 - une animation simple ;
 - un écran titre et un écran de fin.
 
-### 4.2. Proposition de ressources
+### 4.2. Ressources de la formation
 
-Le fichier `res.pyxres` de départ contiendra progressivement :
+Le fichier `res.pyxres` est fourni avec les leçons. Il est produit par le script `cours/pyxel-platformer/outils/generer_ressources.py`, qui construit l'archive à partir de petites images décrites en ASCII.
+
+Contenu livré avec la leçon 2 :
 
 #### Image bank 0
 
-- frames du joueur immobile ;
-- frames du joueur en déplacement ;
-- frames du joueur dans les airs ;
-- ennemi ;
-- objet à ramasser ;
-- sortie du niveau ;
-- éléments décoratifs ;
-- éléments de l'interface si nécessaire.
+- frames du joueur au repos : tuiles (0, 0) et (1, 0) ;
+- frames du joueur en déplacement : tuiles (2, 0) et (3, 0) ;
+- dessus du sol : tuile (0, 1) ;
+- remplissage du sol : tuile (1, 1) ;
+- plateforme : tuile (2, 1) ;
+- pièce : tuile (3, 1) ;
+- buisson : tuile (4, 1).
 
 #### Tilemap 0
 
-- ciel ou arrière-plan ;
-- sol ;
-- plateformes ;
-- murs ;
-- cases de bord ;
-- éventuellement des cases spéciales.
+Niveau de 16 × 16 tuiles, soit 128 × 128 pixels :
+
+- sol à partir de la ligne 12 ;
+- deux plateformes ;
+- six pièces ;
+- une case décorative.
 
 #### Sons
 
-- saut ;
-- collecte ;
-- contact avec un ennemi ;
-- victoire ou défaite.
+- son 0 : saut ;
+- son 1 : pièce ;
+- son 2 : collision ;
+- sons 8 à 13 : mélodie et accompagnement de la musique 0.
 
 #### Musiques
 
-- musique de jeu ;
-- éventuellement musique de titre ou de victoire.
+- musique 0 : thème du niveau, deux canaux.
+
+Les ressources seront étendues au fil des leçons :
+
+- ennemi et sortie du niveau ;
+- cases de bord et cases spéciales ;
+- bruitage de victoire ou de défaite ;
+- musique de titre.
+
+Le script de génération sert de référence reproductible : il permet de régénérer le fichier, de corriger un dessin ou d'ajouter une tuile sans dépendre d'un éditeur graphique.
 
 ### 4.3. Architecture finale visée
 
@@ -1052,60 +1071,42 @@ Le dossier de travail peut contenir les articles et les vidéos, mais le projet 
 
 ---
 
-# 9. Organisation future des fichiers dans le repository
+# 9. Organisation des fichiers dans le repository
 
-Cette organisation pourra être utilisée pendant la phase de production :
+L'organisation effectivement utilisée pendant la production est la suivante :
 
 ```text
 cours/
   pyxel-platformer/
-    README.md
-    00-demarrage/
-      main.py
+    outils/
+      generer_ressources.py
       res.pyxres
     01-boucle-et-game/
+      article.qmd
+      script-video.md
       main.py
-      res.pyxres
-    02-ressources/
+    02-ressources-pyxres/
+      article.qmd
+      script-video.md
       main.py
       res.pyxres
     03-joueur/
+      article.qmd
+      script-video.md
       main.py
       res.pyxres
-    04-gravite-et-saut/
-      main.py
-      res.pyxres
-    05-tilemap/
-      main.py
-      res.pyxres
-    06-collisions/
-      main.py
-      res.pyxres
-    07-objets/
-      main.py
-      res.pyxres
-    08-regles-du-jeu/
-      main.py
-      res.pyxres
-    09-animation-et-camera/
-      main.py
-      res.pyxres
-    10-audio-et-scenes/
-      main.py
-      res.pyxres
-    11-nuit-du-code/
-      main.py
-      res.pyxres
+    ...
     bonus-cube/
-      01-premiere-scene/
-        main.py
-      02-transformations/
-        main.py
-      03-jeu-3d/
-        main.py
+      ...
 ```
 
-Les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D devra rester constante.
+Règles appliquées :
+
+- chaque dossier de leçon est autonome : `main.py` et, à partir de la leçon 2, `res.pyxres` peuvent être copiés dans PyxelStudio tels quels ;
+- `article.qmd` contient le texte de l'article au format Quarto ;
+- `script-video.md` contient le script de la vidéo ;
+- le fichier de ressources de référence est généré dans `outils/`, puis copié dans le dossier de la leçon ;
+- les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante.
 
 ---
 
