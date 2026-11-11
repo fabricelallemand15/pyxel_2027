@@ -190,8 +190,9 @@ TILE_BUSH = (4, 1)
 # Une case vide référence une zone transparente de la banque d'images.
 TILE_EMPTY = (5, 5)
 
-# La tilemap fait 32 x 32 tuiles, soit 256 x 256 pixels.
-LEVEL_WIDTH_TILES = 32
+# Le niveau fait 64 tuiles de large sur 32 de haut : 512 x 256 pixels,
+# soit deux écrans. Seule la première moitié tient dans la fenêtre.
+LEVEL_WIDTH_TILES = 64
 LEVEL_HEIGHT_TILES = 32
 GROUND_ROW = 28
 
@@ -200,10 +201,13 @@ PLATFORMS = (
     (23, 4, 10),
     (19, 13, 20),
     (15, 23, 29),
+    (23, 36, 42),
+    (19, 46, 52),
+    (15, 56, 62),
 )
 
 # Buissons posés sur le sol.
-BUSH_COLUMNS = (3, 20, 30)
+BUSH_COLUMNS = (3, 20, 30, 38, 48, 60)
 
 # Bruitages : notes -1 (silence) à 59 (si4).
 SOUNDS = {

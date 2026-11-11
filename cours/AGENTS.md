@@ -35,7 +35,7 @@ En cas de contradiction entre ce fichier et le plan, appliquer le plan pour le f
 | Un seul fichier `res.pyxres` | Placé dans le même dossier que `main.py` |
 | Fenêtre 256 × 256 pixels | Toute la formation ; 128 × 128 est seulement mentionné comme variante autorisée |
 | Tuiles de 8 × 8 pixels | Banque d’images et tilemap |
-| Niveau de 32 × 32 tuiles | Remplit exactement l’écran 256 × 256 |
+| Niveau de 64 × 32 tuiles | 512 × 256 pixels : la fenêtre n’en montre que la moitié à la fois |
 | Pyxel 3.0.1 | Signatures de l’API de cette version, par exemple `pyxel.play(ch, snd)` |
 | PyxelStudio dans Capytale | Environnement principal ; ni installation locale, ni VS Code comme parcours par défaut |
 | POO obligatoire | Une classe par type d’élément du jeu |
@@ -57,7 +57,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 6 — Collisions avec la tilemap | `06-collisions/` | produite |
 | 7 — Plusieurs types d’objets | `07-objets/` | produite |
 | 8 — Règles du jeu | `08-regles-du-jeu/` | produite |
-| 9 — Animation et caméra | `09-animation-et-camera/` | à produire |
+| 9 — Animation et caméra | `09-animation-et-camera/` | produite |
 | 10 — Audio, interface, états | `10-audio-et-scenes/` | à produire |
 | 11 — Préparation Nuit du Code | `11-nuit-du-code/` | à produire |
 | Bonus — Pyxel Cube | `bonus-cube/` | à produire |
@@ -188,7 +188,11 @@ Game()
 | --- | --- | --- |
 | Dimensions de la fenêtre | 256 × 256 | Règlement Nuit du Code |
 | Taille d’une tuile | 8 × 8 | Banque d’images |
-| Dimensions du niveau | 32 × 32 tuiles | Remplit l’écran |
+| Dimensions du niveau | 64 × 32 tuiles | 512 × 256 pixels, deux écrans de large |
+| Largeur de la fenêtre en tuiles | 32 | 256 pixels |
+| Cadence d’animation | 6 images par changement | `ANIMATION_SPEED` |
+| Caméra maximale | 256 | `512 - 256` |
+| Limite droite du joueur | 504 | `512 - 8` |
 | Haut du sol, ligne de tuiles | 28 | Niveau de référence |
 | Coordonnée `GROUND_Y` | 224 | `28 × 8` |
 | Position verticale du joueur | 216 | `224 - 8` |
@@ -247,6 +251,17 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - La reconstruction de liste s’écrit en compréhension, avec la boucle équivalente expliquée dans l’article.
 - L’état du jeu vit dans des attributs de `Game` (`score`, `is_game_over`) ; `update()` sort immédiatement quand la partie est terminée.
 
+### 7.8. Animation et caméra
+
+- Une animation est une liste de tuiles parcourue par un index calculé avec `pyxel.frame_count`.
+- `pyxel.frame_count // ANIMATION_SPEED % 2` donne l’index ; ne pas oublier `% len(liste)` avec plus de deux images.
+- Le choix de l’image se fait en fin de `update()`, quand `dx` et `is_on_ground` sont à jour.
+- Un sprite se retourne avec une largeur négative ; la position `x` ne change pas.
+- Les objets gardent des coordonnées du monde ; la caméra ne décale que le dessin.
+- `pyxel.camera(x, 0)` centre le joueur, avec `pyxel.clamp()` pour rester dans le niveau.
+- `pyxel.camera()` sans argument remet le décalage à zéro avant l’interface.
+- Le joueur est limité par `level.width`, plus par la taille de la fenêtre.
+
 ## 8. Conventions des ressources
 
 ### 8.1. Génération
@@ -287,11 +302,13 @@ La couleur 0 est la couleur transparente des sprites. Aucun dessin de sprite ne 
 
 ### 8.3. Tilemap 0
 
-- niveau de 32 × 32 tuiles ;
+- niveau de 64 × 32 tuiles, soit 512 × 256 pixels ;
+- seule la moitié gauche, large de 256 pixels, tient dans la fenêtre ;
 - sol à partir de la ligne 28 ;
 - plateau technique : une case vide référence la tuile (5, 5), zone transparente de la banque ;
 - les cases situées hors du niveau utilisent également la tuile (5, 5) ;
-- neuf tuiles de pièce sur les lignes 22, 18 et 14 ; la leçon 7 les remplace en mémoire par des objets.
+- dix-huit tuiles de pièce, neuf par moitié, sur les lignes 22, 18 et 14 ; la leçon 7 les remplace en mémoire par des objets ;
+- six buissons sur la ligne 27, colonnes 3, 20, 30, 38, 48 et 60.
 
 ### 8.4. Sons et musiques
 
@@ -450,7 +467,7 @@ Vérifier également, par lecture ou par script :
 - les balises HTML sont équilibrées et aucun Markdown résiduel ne subsiste (`#`, `|`, `:::`, `**`) ;
 - les liens de la feuille de style et des ancres sont valides ;
 - le script vidéo décrit le même code que l’article ;
-- la fenêtre mesure 256 × 256 et le niveau 32 × 32 tuiles ;
+- la fenêtre mesure 256 × 256 et le niveau 64 × 32 tuiles ;
 - aucun fichier généré inutile n’est ajouté au dépôt.
 
 Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’indiquer explicitement et limiter la validation à ce qui est vérifiable.

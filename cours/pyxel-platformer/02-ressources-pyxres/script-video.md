@@ -308,7 +308,9 @@ musiques  -> pyxel.playm()
 
 > Une tilemap est une grille de références. Chaque case ne contient pas un dessin : elle contient la position d’une tuile dans la banque d’images.
 >
-> La tilemap 0 décrit notre niveau. Elle utilise 32 cases de large sur 32 cases de haut, soit 256 pixels sur 256.
+> La tilemap 0 décrit notre niveau. Elle mesure 64 cases de large sur 32 cases de haut, soit 512 pixels sur 256 : deux fois la largeur de la fenêtre.
+>
+> Jusqu’à la leçon 8, le programme n’en dessine que la moitié gauche, large de 256 pixels. La caméra de la leçon 9 fera défiler la seconde moitié.
 >
 > La ligne 28 contient le dessus du sol. Les lignes suivantes contiennent le remplissage. Le joueur se déplace à la surface, juste au-dessus de la ligne 28.
 
@@ -316,7 +318,9 @@ musiques  -> pyxel.playm()
 
 **Narration :**
 
-> Les plateformes occupent les lignes 23, 19 et 15 : elles montent vers la droite. Les pièces se trouvent juste au-dessus, sur les lignes 22, 18 et 14. Trois buissons décorent le sol.
+> Les plateformes occupent les lignes 23, 19 et 15 : elles montent vers la droite. Les pièces se trouvent juste au-dessus, sur les lignes 22, 18 et 14. Six buissons décorent le sol.
+>
+> Le même motif se répète dans la moitié droite, à partir de la colonne 36 : trois plateformes, neuf pièces, trois buissons. Le niveau contient donc dix-huit pièces, dont neuf seulement tiennent dans la fenêtre.
 >
 > Les autres cases sont vides. Une case vide référence une zone transparente de la banque d’images, ici la tuile située en bas à droite de la zone utilisée.
 >
