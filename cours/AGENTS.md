@@ -51,7 +51,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 0 — Découvrir PyxelStudio | aucun | non produite |
 | 1 — Boucle de jeu et classe `Game` | `01-boucle-et-game/` | produite |
 | 2 — Fichier de ressources `.pyxres` | `02-ressources-pyxres/` | produite |
-| 3 — Joueur et contrôles | `03-joueur/` | à produire |
+| 3 — Joueur et contrôles | `03-joueur/` | produite |
 | 4 — Gravité et saut | `04-gravite-et-saut/` | à produire |
 | 5 — Niveau et tilemap | `05-tilemap/` | à produire |
 | 6 — Collisions avec la tilemap | `06-collisions/` | à produire |
@@ -193,6 +193,7 @@ Game()
 | Coordonnée `GROUND_Y` | 224 | `28 × 8` |
 | Position verticale du joueur | 216 | `224 - 8` |
 | Position horizontale du joueur | 40 | Colonne 5 |
+| Vitesse horizontale du joueur | 2 pixels par image | Contrôles au clavier |
 
 Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 
