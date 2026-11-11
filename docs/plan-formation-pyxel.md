@@ -667,24 +667,22 @@ pyxel.tilemaps[0].collide()
 
 ### Méthode visée
 
-Une méthode de `Level` indiquera quelles cases sont solides :
+Une méthode de `Level` renvoie le déplacement autorisé :
 
 ```python
 def move_player(self, x, y, dx, dy):
-    walls = [(1, 0), (2, 0)]
-    dx, dy = self.tilemap.collide(
+    return self.tilemap.collide(
         x,
         y,
-        8,
-        8,
+        PLAYER_WIDTH,
+        PLAYER_HEIGHT,
         dx,
         dy,
-        walls,
+        SOLID_TILES,
     )
-    return x + dx, y + dy
 ```
 
-La signature exacte sera vérifiée dans PyxelStudio avant la production de la leçon.
+`collide()` renvoie un couple `(dx, dy)` corrigé, et non une position ; `walls` reçoit la liste des tuiles de la banque d’images, ici `SOLID_TILES`. Le joueur applique ensuite ce déplacement et en déduit son état « au sol ».
 
 ### Concepts
 

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leçon 6 — Les collisions avec la tilemap | Formation Pyxel</title>
+  <meta name="description" content="Corriger les déplacements du joueur avec Tilemap.collide() pour arrêter le personnage sur le sol, les murs et les plateformes">
+  <link rel="stylesheet" href="../styles/article.css">
+</head>
+<body>
+  <article class="lesson">
+    <header class="lesson-header">
+      <p class="lesson-label">Formation Pyxel · Leçon 6</p>
+      <h1>Les collisions avec la tilemap</h1>
+      <p class="lesson-subtitle">Corriger les déplacements du joueur avec Tilemap.collide() pour arrêter le personnage sur le sol, les murs et les plateformes</p>
+    </header>
+
+    <nav class="lesson-toc" aria-label="Sommaire">
+      <p class="lesson-toc-title">Sommaire</p>
+      <ol>
+        <li><a href="#presentation">Présentation</a></li>
+        <li><a href="#objectifs">Objectifs</a></li>
+        <li><a href="#ce-qui-change">Ce qui change</a></li>
+        <li><a href="#le-code-complet">Le code complet</a></li>
+        <li><a href="#comprendre-le-programme">Comprendre le programme</a></li>
+        <li><a href="#verifier-le-resultat">Vérifier le résultat</a></li>
+        <li><a href="#erreurs-frequentes">Erreurs fréquentes</a></li>
+        <li><a href="#experimentations">Expérimentations</a></li>
+        <li><a href="#a-retenir">À retenir</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="presentation">Présentation</h2>
+    <p>Le programme sait depuis la leçon 5 lire une case de la tilemap, mais il ne s’en sert que pour afficher un état. Le joueur traverse encore les plateformes, et rien ne le retient lorsqu’il tombe.</p>
+    <p>Cette leçon transforme cette lecture en action. À chaque image, le joueur demande un déplacement ; le niveau répond par le déplacement qu’il autorise. Si une case solide se trouve sur la trajectoire, le mouvement est raccourci pour que le personnage s’arrête au contact, sans jamais entrer dans le décor.</p>
+    <p>Pyxel fournit pour cela une méthode de la tilemap, <code>collide()</code>, qui prend un rectangle, un déplacement demandé et une liste de tuiles qui font obstacle. Elle renvoie un déplacement corrigé. Le sol, le plafond et les murs latéraux sont traités par le même appel.</p>
+    <p>Le jeu affiche en permanence si le joueur est posé au sol. Cette information, utile pour autoriser le saut, est déduite du résultat de la collision.</p>
+
+    <h2 id="objectifs">Objectifs</h2>
+    <p>À la fin de la leçon, vous devez pouvoir :</p>
+    <ol>
+      <li>décrire le joueur par un rectangle englobant ;</li>
+      <li>distinguer le déplacement demandé du déplacement autorisé ;</li>
+      <li>appeler <code>collide()</code> avec les bons arguments ;</li>
+      <li>placer la liste des tuiles qui font obstacle ;</li>
+      <li>empêcher le joueur de traverser le sol et les plateformes ;</li>
+      <li>déduire du résultat si le joueur est au sol.</li>
+    </ol>
+
+    <h2 id="ce-qui-change">Ce qui change</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Élément</th><th>Leçon 5</th><th>Leçon 6</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>Level</code></td><td>objet tilemap et <code>is_solid()</code></td><td><code>is_solid()</code> remplacée par <code>move_player()</code></td></tr>
+          <tr><td><code>SOLID_TILES</code></td><td>tuple de tuiles</td><td>liste de tuiles, comme l’attend <code>collide()</code></td></tr>
+          <tr><td><code>Player</code></td><td>position, vitesse, saut</td><td>reçoit le niveau et lui demande l’autorisation de bouger</td></tr>
+          <tr><td>Déplacement</td><td><code>x += dx</code>, puis <code>y += dy</code></td><td>déplacement corrigé avant d’être appliqué</td></tr>
+          <tr><td><code>is_on_ground</code></td><td>recalage sur <code>GROUND_Y</code></td><td>déduit du déplacement vertical corrigé</td></tr>
+          <tr><td>Départ</td><td><code>PLAYER_START_X = 40</code></td><td><code>PLAYER_START_X = 8</code>, pour avoir de la place devant</td></tr>
+          <tr><td>Affichage</td><td>case sous les pieds</td><td><code>Au sol : oui</code> ou <code>non</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Le saut ne change pas</p>
+      <p>La vitesse, la gravité et la puissance du saut restent celles de la leçon 4 : <code>PLAYER_SPEED = 2</code>, <code>GRAVITY = 1</code> et <code>JUMP_SPEED = -11</code>. Seule la façon d’appliquer le déplacement change.</p>
+      <p>La musique et le bruitage de saut ne changent pas non plus.</p>
+    </aside>
+
+    <h2 id="le-code-complet">Le code complet</h2>
+    <pre><code class="language-python">import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+]
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_TILE_X = 0
+PLAYER_TILE_Y = 0
+PLAYER_START_X = 8
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
+    def move_player(self, x, y, dx, dy):
+        return self.tilemap.collide(
+            x,
+            y,
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT,
+            dx,
+            dy,
+            SOLID_TILES,
+        )
+
+
+class Player:
+    def __init__(self, x, y, level):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+        self.level = level
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+
+        was_falling = self.dy &gt; 0
+        self.dx, self.dy = self.level.move_player(
+            self.x,
+            self.y,
+            self.dx,
+            self.dy,
+        )
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            pyxel.width - self.width,
+        )
+        self.y += self.dy
+
+        self.is_on_ground = was_falling and self.dy == 0
+
+    def draw(self):
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            PLAYER_TILE_X * TILE_SIZE,
+            PLAYER_TILE_Y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Leçon 6 - collisions",
+        )
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+            self.level,
+        )
+
+        pyxel.playm(MUSIC, loop=True)
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.player.update()
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+        self.level.draw()
+
+        if self.player.is_on_ground:
+            state = "oui"
+        else:
+            state = "non"
+
+        pyxel.text(
+            4,
+            4,
+            "Leçon 6 - collisions",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            "Flèches : déplacer, Espace : sauter",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            20,
+            f"Au sol : {state}",
+            TEXT_COLOR,
+        )
+
+        self.player.draw()
+
+
+Game()
+</code></pre>
+
+    <h2 id="comprendre-le-programme">Comprendre le programme</h2>
+
+    <h3>Un rectangle englobant</h3>
+    <p>Une collision ne se calcule pas sur un dessin, mais sur un rectangle. Le joueur en occupe un de 8 pixels sur 8, dont le coin supérieur gauche est <code>(x, y)</code> :</p>
+    <pre><code class="language-python">self.width = PLAYER_WIDTH
+self.height = PLAYER_HEIGHT</code></pre>
+    <p>Le rectangle couvre les pixels de <code>x</code> à <code>x + width - 1</code> et de <code>y</code> à <code>y + height - 1</code>. Ce détail d’un pixel explique des arrêts qui semblent parfois décalés : un joueur posé au sol occupe la ligne 27, alors que le sol commence à la ligne 28.</p>
+
+    <aside class="callout callout-tip">
+      <p class="callout-title">Un rectangle, pas une image</p>
+      <p>Le dessin du personnage peut dépasser légèrement du rectangle sans conséquence sur les collisions. C’est le rectangle qui décide, et c’est lui que l’on règle.</p>
+    </aside>
+
+    <h3>Un déplacement demandé, un déplacement autorisé</h3>
+    <p>Jusqu’ici, <code>update()</code> calculait un déplacement puis l’appliquait immédiatement :</p>
+    <pre><code class="language-python">self.x += self.dx
+self.y += self.dy</code></pre>
+    <p>Cette fois, le déplacement passe par le niveau avant d’être appliqué. Le joueur exprime une intention : avancer de <code>dx</code> et descendre de <code>dy</code>. Le niveau vérifie la trajectoire et renvoie un déplacement compatible avec le décor, souvent plus court, parfois nul.</p>
+    <p>La différence entre les deux valeurs est toute la collision : demander 2 pixels puis n’en obtenir aucun signifie que le personnage touche un mur.</p>
+
+    <h3>La méthode move_player()</h3>
+    <p>La classe <code>Level</code> reçoit une méthode qui fait le lien entre le joueur et la tilemap :</p>
+    <pre><code class="language-python">def move_player(self, x, y, dx, dy):
+    return self.tilemap.collide(
+        x,
+        y,
+        PLAYER_WIDTH,
+        PLAYER_HEIGHT,
+        dx,
+        dy,
+        SOLID_TILES,
+    )</code></pre>
+    <p>Elle ne modifie rien : elle interroge la tilemap et renvoie le résultat. Les dimensions du joueur sont lues dans les constantes, ce qui évite de les répéter à chaque appel.</p>
+    <p>Le nom annonce le rôle de la méthode. Pour un autre objet, une caisse par exemple, on écrirait une méthode équivalente avec ses propres dimensions.</p>
+
+    <h3>La signature de collide()</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Argument</th><th>Rôle</th><th>Valeur ici</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>x</code>, <code>y</code></td><td>coin supérieur gauche du rectangle, en pixels</td><td><code>self.x</code>, <code>self.y</code></td></tr>
+          <tr><td><code>w</code>, <code>h</code></td><td>largeur et hauteur du rectangle, en pixels</td><td><code>8</code>, <code>8</code></td></tr>
+          <tr><td><code>dx</code>, <code>dy</code></td><td>déplacement demandé, en pixels</td><td><code>self.dx</code>, <code>self.dy</code></td></tr>
+          <tr><td><code>walls</code></td><td>tuiles qui font obstacle</td><td><code>SOLID_TILES</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La méthode renvoie deux valeurs, un déplacement horizontal et un déplacement vertical corrigés. On les récupère par affectation multiple :</p>
+    <pre><code class="language-python">self.dx, self.dy = self.level.move_player(
+    self.x,
+    self.y,
+    self.dx,
+    self.dy,
+)</code></pre>
+    <p>Les attributs <code>self.dx</code> et <code>self.dy</code> sont remplacés par les valeurs autorisées. Après cet appel, ce sont ces valeurs-là qui décrivent le mouvement réel de l’image.</p>
+
+    <h3>Ce que fait collide()</h3>
+    <p>L’appel examine les cases que le rectangle traverserait. Trois situations se présentent.</p>
+    <ul>
+      <li>La trajectoire ne rencontre aucune tuile de <code>SOLID_TILES</code> : le déplacement est renvoyé tel quel.</li>
+      <li>Une case solide se trouve sur le chemin : le déplacement est réduit pour que le rectangle s’arrête exactement contre le bord de cette case.</li>
+      <li>Le déplacement est déjà bloqué au départ : il devient nul.</li>
+    </ul>
+    <p>Cette correction s’applique aux deux axes. En descendant, le rectangle s’arrête sur le dessus du sol ; en montant, il bute sous une plateforme ; horizontalement, il se bloque contre un flanc.</p>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Pourquoi l’arrêt est net</p>
+      <p>La valeur renvoyée n’est pas approximative : elle place le rectangle au contact exact de la case. C’est pour cela qu’un joueur posé au sol reste à <code>y = 216</code>, à chaque image, sans flottement ni vibration.</p>
+      <p>Pyxel traite en premier l’axe dont le déplacement est le plus important, ce qui évite de rester accroché dans les angles.</p>
+    </aside>
+
+    <h3>Sol, plafond et murs</h3>
+    <p>Un même appel suffit pour les trois directions, car les trois dépendent de la même liste de tuiles.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Situation</th><th>Déplacement demandé</th><th>Résultat</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Joueur posé sur le sol</td><td><code>dy = 1</code></td><td><code>dy = 0</code>, le joueur reste à 216</td></tr>
+          <tr><td>Saut sous une plateforme</td><td><code>dy</code> négatif</td><td>saut coupé, la tête reste sous la ligne 23</td></tr>
+          <tr><td>Course contre un flanc</td><td><code>dx = 2</code></td><td><code>dx = 0</code>, le joueur s’arrête au bord</td></tr>
+          <tr><td>Chute dans le vide</td><td><code>dy</code> positif</td><td>déplacement entier, aucune case solide</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les bords de l’écran ne sont pas des murs : la tilemap ne contient rien en dehors du niveau. Le maintien dans la fenêtre reste donc assuré par <code>pyxel.clamp()</code>, comme dans les leçons précédentes.</p>
+
+    <h3>Déduire que le joueur est au sol</h3>
+    <p>Le saut n’est autorisé que si le joueur touche le sol. Cette information se lit maintenant dans le résultat de la collision :</p>
+    <pre><code class="language-python">was_falling = self.dy > 0
+self.dx, self.dy = self.level.move_player(...)
+
+self.is_on_ground = was_falling and self.dy == 0</code></pre>
+    <p>Trois cas se présentent :</p>
+    <ol>
+      <li>Le joueur tombait et son déplacement vertical est annulé : il vient de se poser.</li>
+      <li>Le joueur tombait et descend encore : il est en l’air.</li>
+      <li>Le joueur montait : il saute, donc il n’est pas au sol.</li>
+    </ol>
+    <p>L’attribut <code>was_falling</code> garde la valeur d’avant la correction, car <code>self.dy</code> est remplacé par le résultat. Sans cette précaution, un joueur immobile au sol aurait un déplacement nul et semblerait toujours en l’air.</p>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Lire dy avant de l’écraser</p>
+      <p>Placer <code>was_falling</code> après l’appel à <code>move_player()</code> rend le saut impossible : <code>self.dy</code> vaut alors <code>0</code> au sol et la condition <code>self.dy &gt; 0</code> est fausse.</p>
+    </aside>
+
+    <h3>Pourquoi is_solid() disparaît</h3>
+    <p>La méthode <code>is_solid()</code> de la leçon 5 répondait à une question sur une case précise. <code>collide()</code> répond à une question plus utile : quel déplacement est possible pour ce rectangle ? Elle consulte elle-même les cases de la trajectoire et utilise la liste des tuiles solides.</p>
+    <p>Garder les deux méthodes aurait laissé dans la classe <code>Level</code> une fonction que plus personne n’appelle. La liste <code>SOLID_TILES</code>, elle, reste : c’est le seul endroit où l’on décide ce qui arrête le joueur.</p>
+
+    <aside class="callout callout-tip">
+      <p class="callout-title">Une liste, pas un tuple</p>
+      <p><code>collide()</code> attend une liste de tuiles, notée entre crochets :</p>
+      <pre><code class="language-python">SOLID_TILES = [(0, 1), (1, 1), (2, 1)]</code></pre>
+      <p>Le contenu ne change pas : ce sont toujours les coordonnées des tuiles dans la banque d’images.</p>
+    </aside>
+
+    <h3>L’ordre des opérations dans update()</h3>
+    <p>La méthode <code>update()</code> du joueur suit maintenant quatre étapes.</p>
+    <ol>
+      <li>Remettre <code>dx</code> à zéro, puis lire les flèches pour choisir le déplacement horizontal demandé.</li>
+      <li>Déclencher le saut si la touche espace vient d’être pressée et si le joueur est au sol.</li>
+      <li>Ajouter la gravité à <code>dy</code>, puis demander au niveau le déplacement autorisé.</li>
+      <li>Appliquer le déplacement corrigé, maintenir le joueur dans la fenêtre, puis mettre à jour <code>is_on_ground</code>.</li>
+    </ol>
+    <p>La gravité est ajoutée avant l’appel : le niveau corrige ainsi le déplacement réel de l’image, et non celui de l’image précédente.</p>
+
+    <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Point à vérifier</th><th>Résultat attendu</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Au démarrage</td><td><code>Au sol : oui</code>, le joueur est posé à <code>y = 216</code></td></tr>
+          <tr><td>Marcher vers la gauche</td><td>Le joueur s’arrête au bord de l’écran, sans sortir</td></tr>
+          <tr><td>Sauter en terrain dégagé</td><td>Le joueur monte d’environ 55 pixels, puis revient exactement à 216</td></tr>
+          <tr><td>Sauter sous la première plateforme</td><td>Le saut est coupé, la tête reste sous la ligne 23</td></tr>
+          <tr><td>Sauter puis avancer</td><td>Le joueur atterrit sur la plateforme, à <code>y = 176</code></td></tr>
+          <tr><td>Marcher sur la plateforme</td><td>Le joueur reste à <code>y = 176</code>, <code>Au sol : oui</code></td></tr>
+          <tr><td>Quitter la plateforme par la droite</td><td>Le joueur tombe et se pose sur le sol</td></tr>
+          <tr><td>Pendant un saut</td><td><code>Au sol : non</code></td></tr>
+          <tr><td>Traverser une plateforme</td><td>Impossible, dans les deux sens</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le joueur ne peut plus traverser une plateforme, ni par le dessus, ni par le dessous, ni par le côté. Aucune vibration n’apparaît lorsqu’il reste immobile sur le sol.</p>
+
+    <h2 id="erreurs-frequentes">Erreurs fréquentes</h2>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Le déplacement est appliqué deux fois</p>
+      <p>Passer <code>self.x + self.dx</code> à la place de <code>self.x</code> décale déjà le rectangle avant la vérification. Le joueur avance du double, et peut traverser une case.</p>
+      <pre><code class="language-python">self.dx, self.dy = self.level.move_player(
+    self.x + self.dx,
+    self.y,
+    self.dx,
+    self.dy,
+)</code></pre>
+    <p>La position transmise est celle d’avant le déplacement ; la méthode renvoie un déplacement, pas une position.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Le résultat est ignoré</p>
+      <p>Appeler <code>move_player()</code> sans récupérer les deux valeurs ne corrige rien :</p>
+      <pre><code class="language-python">self.level.move_player(self.x, self.y, self.dx, self.dy)
+self.x += self.dx</code></pre>
+      <p>Le déplacement demandé est alors appliqué tel quel, et le joueur traverse toujours le décor.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Les murs sont donnés en cases</p>
+      <p><code>SOLID_TILES</code> contient des coordonnées de tuiles dans la banque d’images, comme celles que renvoie <code>pget()</code>, et non des positions dans la tilemap. Une liste de coordonnées de cases du niveau ne bloquerait jamais rien.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Une tuile du décor est oubliée</p>
+      <p>La tuile de remplissage <code>(2, 1)</code> doit figurer dans la liste. Sans elle, le joueur s’arrête sur la surface du sol puis s’enfonce dès que la case du dessus n’est plus solide.</p>
+      <p>À l’inverse, ajouter la tuile de la pièce rend les pièces infranchissables.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Le saut devient impossible</p>
+      <p>Un joueur qui ne saute plus est un joueur qui n’est jamais considéré comme posé. Vérifiez que <code>is_on_ground</code> est bien recalculé après le déplacement, et que <code>was_falling</code> est lu avant l’appel à <code>move_player()</code>.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Un nombre magique remplace la constante</p>
+      <p>Écrire <code>collide(x, y, 8, 8, dx, dy, SOLID_TILES)</code> fonctionne, mais la taille du joueur devient invisible le jour où le sprite change. Les constantes <code>PLAYER_WIDTH</code> et <code>PLAYER_HEIGHT</code> gardent une seule source de vérité.</p>
+    </aside>
+
+    <h2 id="experimentations">Expérimentations</h2>
+    <p>Ces modifications sont facultatives.</p>
+
+    <h3>Rendre le buisson solide</h3>
+    <pre><code class="language-python">SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+    (4, 1),
+]</code></pre>
+    <p>Les buissons arrêtent maintenant le joueur. La modification se fait dans une seule liste, sans toucher à la tilemap ni au code du joueur.</p>
+
+    <h3>Un mur au bord droit</h3>
+    <p>Ajoutez dans <code>Game.__init__()</code>, après le chargement des ressources, une colonne de cases pleines :</p>
+    <pre><code class="language-python">for tile_y in range(LEVEL_HEIGHT):
+    self.level.tilemap.pset(31, tile_y, (2, 1))</code></pre>
+    <p>Le joueur s’arrête avant le bord droit, poussé par la collision et non plus par <code>clamp()</code>. Surprise fréquente : la colonne murale masque aussi le décor derrière elle, car elle remplace les cases existantes.</p>
+
+    <h3>Afficher le déplacement autorisé</h3>
+    <pre><code class="language-python">pyxel.text(4, 28, f"dx = {self.player.dx}", TEXT_COLOR)</code></pre>
+    <p>Cette ligne, ajoutée dans <code>Game.draw()</code>, montre le déplacement effectivement appliqué. Contre un mur, la valeur reste à zéro ; en chute libre, elle suit la gravité.</p>
+
+    <h3>Un saut plus puissant</h3>
+    <pre><code class="language-python">JUMP_SPEED = -14</code></pre>
+    <p>Le joueur monte plus haut et atteint la deuxième plateforme. La correction du mouvement ne dépend pas de la vitesse : un déplacement de 14 pixels est coupé comme un déplacement de 2, sans traverser la case.</p>
+
+    <h3>Une case dangereuse</h3>
+    <p>Il est possible de tester une case sous les pieds du joueur et de le renvoyer au départ lorsqu’elle correspond à une tuile donnée :</p>
+    <pre><code class="language-python">tile_x = self.player.x // TILE_SIZE
+tile_y = (self.player.y + self.player.height) // TILE_SIZE
+if self.level.tilemap.pget(tile_x, tile_y) == (4, 1):
+    self.player.x = PLAYER_START_X
+    self.player.y = PLAYER_START_Y</code></pre>
+    <p>La collision et la lecture de case se complètent ici : l’une corrige le mouvement, l’autre déclenche un effet.</p>
+
+    <h2 id="a-retenir">À retenir</h2>
+    <ul>
+      <li>Le joueur est un rectangle de 8 × 8 pixels, décrit par <code>x</code>, <code>y</code>, <code>width</code> et <code>height</code>.</li>
+      <li>Un déplacement se demande, puis s’applique seulement s’il est autorisé.</li>
+      <li><code>pyxel.tilemaps[0].collide()</code> renvoie un déplacement corrigé, jamais une position.</li>
+      <li>Sa signature est <code>collide(x, y, w, h, dx, dy, walls)</code>.</li>
+      <li><code>walls</code> est la liste des tuiles qui font obstacle, en coordonnées de banque d’images.</li>
+      <li>Le sol, le plafond et les murs latéraux sont traités par le même appel.</li>
+      <li><code>is_on_ground</code> se déduit d’un déplacement vertical annulé alors que le joueur tombait.</li>
+    </ul>
+
+    <p>Dans la prochaine leçon, le niveau accueille plusieurs types d’objets : les pièces à ramasser deviennent des objets à part entière, avec leur propre mise à jour et leur propre dessin.</p>
+
+  </article>
+</body>
+</html>
