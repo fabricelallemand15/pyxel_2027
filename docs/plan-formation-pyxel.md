@@ -60,7 +60,7 @@ Le fichier `res.pyxres` contient les ressources du jeu :
 Le programme chargera la ressource après l'initialisation de Pyxel :
 
 ```python
-pyxel.init(128, 128, title="Mon platformer")
+pyxel.init(256, 256, title="Mon platformer")
 pyxel.load("res.pyxres")
 ```
 
@@ -68,13 +68,13 @@ Le nom `res.pyxres` est la convention de référence du cours. Si l'interface Ca
 
 Le règlement de la Nuit du Code impose par ailleurs une fenêtre de jeu de 128 × 128 ou de 256 × 256 pixels.
 
-La formation retient **128 × 128 pixels** :
+La formation retient **256 × 256 pixels** :
 
-- le niveau de référence occupe 16 × 16 tuiles et remplit exactement l'écran ;
-- la caméra devient réellement utile lorsqu'un niveau plus large que l'écran est construit ;
-- les ressources restent petites et rapides à dessiner.
+- le niveau de référence occupe 32 × 32 tuiles et remplit exactement l'écran ;
+- le décor peut comporter plusieurs plateformes étagées sans être à l'étroit ;
+- les sprites de 8 × 8 pixels restent petits par rapport à la fenêtre, ce qui donne un rendu lisible.
 
-La variante 256 × 256 est mentionnée dans les leçons comme une alternative conforme au règlement. Elle ne change que les dimensions de l'écran et le nombre de tuiles visibles.
+La variante 128 × 128 est mentionnée dans les leçons comme une alternative conforme au règlement. Elle change les dimensions de l'écran, le nombre de tuiles visibles et les positions du décor.
 
 ### 2.2. POO simplifiée
 
@@ -235,12 +235,12 @@ Contenu livré avec la leçon 2 :
 
 #### Tilemap 0
 
-Niveau de 16 × 16 tuiles, soit 128 × 128 pixels :
+Niveau de 32 × 32 tuiles, soit 256 × 256 pixels :
 
-- sol à partir de la ligne 12 ;
-- deux plateformes ;
-- six pièces ;
-- une case décorative.
+- sol à partir de la ligne 28 ;
+- trois plateformes étagées aux lignes 23, 19 et 15 ;
+- neuf pièces, trois par plateforme ;
+- trois buissons décoratifs sur le sol.
 
 #### Sons
 
@@ -319,7 +319,7 @@ class Enemy:
 
 class Game:
     def __init__(self):
-        pyxel.init(128, 128, title="Mon platformer")
+        pyxel.init(256, 256, title="Mon platformer")
         pyxel.load("res.pyxres")
         ...
         pyxel.run(self.update, self.draw)
@@ -1033,6 +1033,47 @@ La vidéo ne devra pas simplement lire l'article. Elle montrera les décisions d
 
 ## 8.2. Article
 
+Les articles sont écrits en HTML, sans chaîne de production Quarto. Chaque page est autonome et importe la feuille de style commune `cours/pyxel-platformer/styles/article.css`.
+
+Structure d'une page :
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>…</title>
+  <link rel="stylesheet" href="../styles/article.css">
+</head>
+<body>
+  <article class="lesson">
+    <header class="lesson-header">…</header>
+    <nav class="lesson-toc">…</nav>
+    …
+  </article>
+</body>
+</html>
+```
+
+Les encadrés utilisent des classes explicites :
+
+| Classe | Usage |
+| --- | --- |
+| `callout callout-note` | information complémentaire |
+| `callout callout-tip` | conseil ou méthode |
+| `callout callout-warning` | erreur fréquente ou piège |
+| `callout callout-important` | règle à ne pas modifier |
+
+Un encadré se présente ainsi :
+
+```html
+<aside class="callout callout-note">
+  <p class="callout-title">Titre de l'encadré</p>
+  <p>Texte de l'encadré.</p>
+</aside>
+```
+
 Chaque article comprendra :
 
 1. le résultat attendu ;
@@ -1047,7 +1088,7 @@ Chaque article comprendra :
 10. un défi facultatif ;
 11. un lien vers la leçon suivante.
 
-Les explications doivent privilégier des phrases courtes et des exemples directement modifiables.
+Les explications doivent privilégier des phrases courtes et des exemples directement modifiables. Le code affiché dans l'article doit être identique à celui de `main.py`.
 
 ## 8.3. Code source
 
@@ -1078,20 +1119,22 @@ L'organisation effectivement utilisée pendant la production est la suivante :
 ```text
 cours/
   pyxel-platformer/
+    styles/
+      article.css
     outils/
       generer_ressources.py
       res.pyxres
     01-boucle-et-game/
-      article.qmd
+      article.html
       script-video.md
       main.py
     02-ressources-pyxres/
-      article.qmd
+      article.html
       script-video.md
       main.py
       res.pyxres
     03-joueur/
-      article.qmd
+      article.html
       script-video.md
       main.py
       res.pyxres
@@ -1103,10 +1146,11 @@ cours/
 Règles appliquées :
 
 - chaque dossier de leçon est autonome : `main.py` et, à partir de la leçon 2, `res.pyxres` peuvent être copiés dans PyxelStudio tels quels ;
-- `article.qmd` contient le texte de l'article au format Quarto ;
+- `article.html` contient l'article en HTML, avec une feuille de style commune `styles/article.css` ;
 - `script-video.md` contient le script de la vidéo ;
 - le fichier de ressources de référence est généré dans `outils/`, puis copié dans le dossier de la leçon ;
-- les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante.
+- les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante ;
+- les consignes de production, les conventions de code et les vérifications à exécuter sont décrites dans `cours/AGENTS.md`.
 
 ---
 

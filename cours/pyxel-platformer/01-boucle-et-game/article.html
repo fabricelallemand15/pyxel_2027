@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leçon 1 — La boucle de jeu et la classe Game | Formation Pyxel</title>
+  <meta name="description" content="Créer une première application Pyxel organisée en objets">
+  <link rel="stylesheet" href="../styles/article.css">
+</head>
+<body>
+  <article class="lesson">
+    <header class="lesson-header">
+      <p class="lesson-label">Formation Pyxel · Leçon 1</p>
+      <h1>La boucle de jeu et la classe Game</h1>
+      <p class="lesson-subtitle">Créer une première application Pyxel organisée en objets</p>
+    </header>
+
+    <nav class="lesson-toc" aria-label="Sommaire">
+      <p class="lesson-toc-title">Sommaire</p>
+      <ol>
+      <li><a href="#presentation">Présentation</a></li>
+      <li><a href="#objectifs">Objectifs</a></li>
+      <li><a href="#preparer-le-projet-dans-pyxelstudio">Préparer le projet dans PyxelStudio</a></li>
+      <li><a href="#le-code-complet">Le code complet</a></li>
+      <li><a href="#comprendre-le-programme">Comprendre le programme</a></li>
+      <li><a href="#la-classe-game">La classe <code>Game</code></a></li>
+      <li><a href="#la-methode-game-update">La méthode <code>Game.update()</code></a></li>
+      <li><a href="#la-methode-game-draw">La méthode <code>Game.draw()</code></a></li>
+      <li><a href="#creer-l-objet-game">Créer l’objet <code>Game</code></a></li>
+      <li><a href="#comprendre-la-boucle-de-jeu">Comprendre la boucle de jeu</a></li>
+      <li><a href="#erreurs-frequentes">Erreurs fréquentes</a></li>
+      <li><a href="#experimentations">Expérimentations</a></li>
+      <li><a href="#a-retenir">À retenir</a></li>
+      </ol>
+    </nav>
+
+<h2 id="presentation">Présentation</h2>
+<p>Dans cette première leçon, nous créons la structure minimale d’un jeu Pyxel.</p>
+<p>Le programme affiche une fenêtre, un sol et un joueur représenté par un rectangle. Le joueur se déplace automatiquement et rebondit sur les bords de l’écran.</p>
+<p>Cette étape introduit deux idées qui resteront présentes dans toute la formation :</p>
+<ul>
+  <li>la boucle de jeu sépare la mise à jour de l’état et le dessin ;</li>
+  <li>chaque élément du jeu est représenté par un objet Python possédant ses propres méthodes.</li>
+</ul>
+<p>Les images, la tilemap, les sons et la musique seront ajoutés dans la prochaine leçon avec le fichier <code>res.pyxres</code>.</p>
+<aside class="callout callout-note">
+<p class="callout-title">Fichier de la leçon</p>
+<p>Cette leçon n’utilise encore aucune ressource graphique externe. Le seul fichier à copier dans l’éditeur est donc <code>main.py</code>.</p>
+<p>Le projet complet de la formation utilisera ensuite deux fichiers placés dans le même dossier :</p>
+<pre><code class="language-text">main.py
+res.pyxres</code></pre>
+</aside>
+<h2 id="objectifs">Objectifs</h2>
+<p>À la fin de la leçon, vous devez pouvoir :</p>
+<ol>
+  <li>initialiser une fenêtre Pyxel avec <code>pyxel.init()</code> ;</li>
+  <li>lancer une boucle avec <code>pyxel.run()</code> ;</li>
+  <li>distinguer le rôle de <code>update()</code> et de <code>draw()</code> ;</li>
+  <li>créer une classe avec <code>__init__()</code> ;</li>
+  <li>utiliser des attributs avec <code>self</code> ;</li>
+  <li>créer un objet <code>Player</code> et lui demander de se mettre à jour et de se dessiner.</li>
+</ol>
+<h2 id="preparer-le-projet-dans-pyxelstudio">Préparer le projet dans PyxelStudio</h2>
+<p>Ouvrez PyxelStudio dans Capytale et créez un projet Python.</p>
+<p>Dans cette leçon, le code est placé dans <code>main.py</code>. Si l’environnement propose déjà un fichier <code>res.pyxres</code>, vous pouvez le conserver, mais il ne sera pas chargé par le programme.</p>
+<aside class="callout callout-warning">
+<p class="callout-title">Ne pas charger encore la ressource</p>
+<p>Le fichier <code>.pyxres</code> sera étudié dans la leçon 2. Laisser cette première version utiliser uniquement des formes géométriques permet de se concentrer sur la boucle de jeu et la structure des classes.</p>
+</aside>
+<h2 id="le-code-complet">Le code complet</h2>
+<p>Copiez le code suivant dans <code>main.py</code>, puis exécutez-le dans PyxelStudio.</p>
+<pre><code class="language-python">import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+GROUND_Y = 224
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 1
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+GROUND_COLOR = pyxel.COLOR_GREEN
+PLAYER_COLOR = pyxel.COLOR_YELLOW
+TEXT_COLOR = pyxel.COLOR_WHITE
+
+
+class Player:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = PLAYER_SPEED
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x &lt;= 0:
+            self.x = 0
+            self.dx = abs(self.dx)
+        elif self.x + self.width &gt;= pyxel.width:
+            self.x = pyxel.width - self.width
+            self.dx = -abs(self.dx)
+
+    def draw(self):
+        pyxel.rect(
+            self.x,
+            self.y,
+            self.width,
+            self.height,
+            PLAYER_COLOR,
+        )
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Leçon 1 - Boucle de jeu",
+        )
+
+        self.player = Player(
+            20,
+            GROUND_Y - PLAYER_HEIGHT,
+        )
+
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.player.update()
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+        pyxel.rect(
+            0,
+            GROUND_Y,
+            pyxel.width,
+            pyxel.height - GROUND_Y,
+            GROUND_COLOR,
+        )
+        pyxel.text(
+            4,
+            4,
+            "Leçon 1 - boucle de jeu",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            f"Image {pyxel.frame_count}",
+            TEXT_COLOR,
+        )
+
+        self.player.draw()
+
+
+Game()</code></pre>
+<p>Le résultat attendu est le suivant :</p>
+<ul>
+  <li>une fenêtre de 256 × 256 pixels ;</li>
+  <li>un fond bleu foncé ;</li>
+  <li>un sol vert ;</li>
+  <li>un carré jaune qui se déplace ;</li>
+  <li>le carré qui rebondit sur les bords ;</li>
+  <li>le numéro d’image affiché en haut à gauche ;</li>
+  <li>la touche <code>Q</code> qui ferme l’application.</li>
+</ul>
+<h2 id="comprendre-le-programme">Comprendre le programme</h2>
+<h3>Importer Pyxel</h3>
+<pre><code class="language-python">import pyxel</code></pre>
+<p>Cette instruction importe le module Pyxel. Elle donne accès aux fonctions utilisées pour :</p>
+<ul>
+  <li>créer la fenêtre ;</li>
+  <li>dessiner ;</li>
+  <li>lire le clavier ;</li>
+  <li>lancer la boucle de jeu ;</li>
+  <li>quitter l’application.</li>
+</ul>
+<h3>Définir des constantes</h3>
+<pre><code class="language-python">SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+GROUND_Y = 224</code></pre>
+<p>Ces constantes décrivent la configuration générale du jeu.</p>
+<p><code>SCREEN_WIDTH</code> et <code>SCREEN_HEIGHT</code> valent 256. Cette valeur correspond à l’une des deux tailles de fenêtre autorisées à la Nuit du Code :</p>
+<pre><code class="language-text">128 × 128 pixels
+256 × 256 pixels</code></pre>
+<p>La formation conserve 256 × 256 pour toute sa durée. La leçon 2 détaille ce choix et présente la variante 128 × 128.</p>
+<p><code>GROUND_Y</code> est la coordonnée verticale du haut du sol. Dans Pyxel, l’origine du repère est située en haut à gauche :</p>
+<ul>
+  <li>les valeurs de <code>x</code> augmentent vers la droite ;</li>
+  <li>les valeurs de <code>y</code> augmentent vers le bas.</li>
+</ul>
+<p>Les dimensions du joueur et sa vitesse sont également regroupées dans des constantes :</p>
+<pre><code class="language-python">PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 1</code></pre>
+<p>Une constante permet de modifier un réglage à un seul endroit du programme.</p>
+<h3>Créer la classe <code>Player</code></h3>
+<pre><code class="language-python">class Player:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = PLAYER_SPEED</code></pre>
+<p>La classe <code>Player</code> décrit un élément du jeu : le joueur.</p>
+<p>La méthode <code>__init__()</code> est appelée lorsqu’un objet est créé. Elle reçoit sa position initiale et enregistre les informations nécessaires dans les attributs de l’objet.</p>
+<p>Par exemple :</p>
+<pre><code class="language-python">self.x = x</code></pre>
+<p>signifie que l’objet mémorise sa position horizontale dans l’attribut <code>x</code>.</p>
+<p>Le préfixe <code>self</code> désigne l’objet courant. Deux objets <code>Player</code> pourraient donc avoir des valeurs différentes pour <code>self.x</code> et <code>self.y</code>.</p>
+<aside class="callout callout-tip">
+<p class="callout-title">Classe et objet</p>
+<p><code>Player</code> est une classe : elle décrit ce qu’est un joueur.</p>
+<pre><code class="language-python">class Player:
+    ...</code></pre>
+<p>Un objet est une instance concrète de cette classe :</p>
+<pre><code class="language-python">player = Player(20, 80)</code></pre>
+<p>Dans le programme, l’objet sera créé par <code>Game</code> et stocké dans <code>self.player</code>.</p>
+</aside>
+<h3>Mettre à jour le joueur</h3>
+<pre><code class="language-python">def update(self):
+    self.x += self.dx</code></pre>
+<p>La méthode <code>update()</code> décrit l’évolution du joueur pendant une image.</p>
+<p>L’attribut <code>dx</code> représente le déplacement horizontal. Avec <code>PLAYER_SPEED = 1</code>, le joueur avance d’un pixel à chaque mise à jour.</p>
+<p>La méthode ne dessine rien. Elle modifie uniquement l’état de l’objet.</p>
+<h4>Gérer les bords de l’écran</h4>
+<pre><code class="language-python">if self.x &lt;= 0:
+    self.x = 0
+    self.dx = abs(self.dx)
+elif self.x + self.width &gt;= pyxel.width:
+    self.x = pyxel.width - self.width
+    self.dx = -abs(self.dx)</code></pre>
+<p>Le premier test concerne le bord gauche.</p>
+<ul>
+  <li>Si <code>self.x</code> devient négatif, le joueur dépasse l’écran.</li>
+  <li>On replace alors <code>self.x</code> à zéro.</li>
+  <li>On rend <code>dx</code> positif afin que le joueur reparte vers la droite.</li>
+</ul>
+<p>Le second test concerne le bord droit.</p>
+<ul>
+  <li><code>self.x + self.width</code> représente la position du bord droit du joueur.</li>
+  <li><code>pyxel.width</code> représente la largeur de l’écran.</li>
+  <li>On replace le joueur pour que son bord droit reste visible.</li>
+  <li>On rend <code>dx</code> négatif afin qu’il reparte vers la gauche.</li>
+</ul>
+<p>La fonction <code>abs()</code> renvoie la valeur absolue d’un nombre. Elle permet d’obtenir la valeur positive de la vitesse avant de choisir son signe.</p>
+<h3>Dessiner le joueur</h3>
+<pre><code class="language-python">def draw(self):
+    pyxel.rect(
+        self.x,
+        self.y,
+        self.width,
+        self.height,
+        PLAYER_COLOR,
+    )</code></pre>
+<p>La méthode <code>draw()</code> représente le joueur à l’écran.</p>
+<p><code>pyxel.rect()</code> reçoit :</p>
+<ol>
+  <li>la coordonnée <code>x</code> du coin supérieur gauche ;</li>
+  <li>la coordonnée <code>y</code> du coin supérieur gauche ;</li>
+  <li>la largeur ;</li>
+  <li>la hauteur ;</li>
+  <li>la couleur.</li>
+</ol>
+<p>La méthode lit les attributs du joueur, mais ne les modifie pas.</p>
+<p>La séparation entre <code>update()</code> et <code>draw()</code> sera conservée pour les autres classes du jeu : ennemis, objets à ramasser et niveau.</p>
+<h2 id="la-classe-game">La classe <code>Game</code></h2>
+<h3>Initialiser le jeu</h3>
+<pre><code class="language-python">class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Leçon 1 - Boucle de jeu",
+        )</code></pre>
+<p>La classe <code>Game</code> représente le jeu dans son ensemble.</p>
+<p>Elle est responsable de :</p>
+<ul>
+  <li>créer la fenêtre ;</li>
+  <li>posséder les objets du jeu ;</li>
+  <li>coordonner leur mise à jour ;</li>
+  <li>coordonner leur dessin.</li>
+</ul>
+<p><code>pyxel.init()</code> initialise une fenêtre de 256 × 256 pixels et lui donne un titre.</p>
+<h3>Créer le joueur</h3>
+<pre><code class="language-python">self.player = Player(
+    20,
+    GROUND_Y - PLAYER_HEIGHT,
+)</code></pre>
+<p>Le jeu crée un objet <code>Player</code> et le conserve dans l’attribut <code>self.player</code>.</p>
+<p>La position verticale est calculée ainsi :</p>
+<pre><code class="language-python">GROUND_Y - PLAYER_HEIGHT</code></pre>
+<p>Le bas du joueur se trouve donc exactement au niveau du haut du sol.</p>
+<h3>Lancer la boucle</h3>
+<pre><code class="language-python">pyxel.run(self.update, self.draw)</code></pre>
+<p>Cette instruction lance l’application Pyxel et lui fournit les deux méthodes à appeler pendant le jeu :</p>
+<ul>
+  <li><code>self.update</code> pour la logique ;</li>
+  <li><code>self.draw</code> pour l’affichage.</li>
+</ul>
+<p>On peut représenter l’organisation générale ainsi :</p>
+<pre><code class="language-text">Game
+├── update()
+│   └── player.update()
+└── draw()
+    └── player.draw()</code></pre>
+<p>La classe <code>Game</code> coordonne les objets, mais le joueur reste responsable de son propre déplacement et de son propre dessin.</p>
+<h2 id="la-methode-game-update">La méthode <code>Game.update()</code></h2>
+<pre><code class="language-python">def update(self):
+    if pyxel.btnp(pyxel.KEY_Q):
+        pyxel.quit()
+
+    self.player.update()</code></pre>
+<p>La méthode commence par vérifier si la touche <code>Q</code> vient d’être pressée.</p>
+<p><code>btnp()</code> est adapté à une action ponctuelle : il renvoie vrai au moment où la touche est pressée. La différence entre <code>btn()</code> et <code>btnp()</code> sera étudiée lors de l’ajout des contrôles du joueur.</p>
+<p>Ensuite, <code>Game</code> demande au joueur de mettre à jour son état :</p>
+<pre><code class="language-python">self.player.update()</code></pre>
+<p>La classe <code>Game</code> ne modifie donc pas directement <code>self.player.x</code>. Elle délègue cette opération à l’objet qui possède la responsabilité du joueur.</p>
+<h2 id="la-methode-game-draw">La méthode <code>Game.draw()</code></h2>
+<h3>Effacer l’image et dessiner le sol</h3>
+<pre><code class="language-python">def draw(self):
+    pyxel.cls(BACKGROUND_COLOR)
+    pyxel.rect(
+        0,
+        GROUND_Y,
+        pyxel.width,
+        pyxel.height - GROUND_Y,
+        GROUND_COLOR,
+    )</code></pre>
+<p>À chaque image, l’écran est effacé avec <code>pyxel.cls()</code>.</p>
+<p>Le sol est un rectangle qui commence à <code>GROUND_Y</code> et s’étend jusqu’en bas de l’écran.</p>
+<p>Le dessin est recommencé à chaque image. Un élément dessiné dans l’image précédente ne reste pas automatiquement présent.</p>
+<h3>Afficher le texte</h3>
+<pre><code class="language-python">pyxel.text(
+    4,
+    4,
+    "Leçon 1 - boucle de jeu",
+    TEXT_COLOR,
+)
+pyxel.text(
+    4,
+    12,
+    f"Image {pyxel.frame_count}",
+    TEXT_COLOR,
+)</code></pre>
+<p><code>pyxel.text()</code> affiche une chaîne à une position donnée.</p>
+<p><code>pyxel.frame_count</code> est un compteur de frames fourni par Pyxel. Il augmente au cours de l’exécution et pourra être utilisé pour créer des animations.</p>
+<h3>Dessiner le joueur</h3>
+<pre><code class="language-python">self.player.draw()</code></pre>
+<p>La classe <code>Game</code> demande au joueur de se dessiner.</p>
+<p>Cette organisation est déjà celle d’un jeu contenant plusieurs objets. Plus tard, <code>Game.draw()</code> demandera de la même manière à chaque ennemi ou objet à ramasser de se dessiner.</p>
+<h2 id="creer-l-objet-game">Créer l’objet <code>Game</code></h2>
+<p>La dernière ligne du fichier est :</p>
+<pre><code class="language-python">Game()</code></pre>
+<p>Une classe ne crée pas automatiquement un objet lorsqu’elle est définie. Cette instruction crée l’objet principal du jeu.</p>
+<p>Son constructeur est alors exécuté dans l’ordre suivant :</p>
+<ol>
+  <li>Pyxel est initialisé ;</li>
+  <li>le joueur est créé ;</li>
+  <li>la boucle de jeu est lancée.</li>
+</ol>
+<p>Sans <code>Game()</code>, le programme définirait les classes mais n’ouvrirait aucune fenêtre.</p>
+<h2 id="comprendre-la-boucle-de-jeu">Comprendre la boucle de jeu</h2>
+<p>Le programme peut maintenant être résumé ainsi :</p>
+<pre><code class="language-text">création de Game
+        ↓
+initialisation de Pyxel
+        ↓
+création de Player
+        ↓
+appel répété de Game.update()
+        ↓
+appel répété de Game.draw()</code></pre>
+<p>Pendant la mise à jour :</p>
+<pre><code class="language-text">Game.update()
+    → Player.update()</code></pre>
+<p>Pendant le dessin :</p>
+<pre><code class="language-text">Game.draw()
+    → dessiner le décor
+    → afficher le texte
+    → Player.draw()</code></pre>
+<p>La logique de déplacement reste dans <code>Player.update()</code>. Le dessin du joueur reste dans <code>Player.draw()</code>.</p>
+<h2 id="erreurs-frequentes">Erreurs fréquentes</h2>
+<aside class="callout callout-warning">
+<p class="callout-title"><code>NameError</code></p>
+<p>Vérifiez l’orthographe des noms : <code>Player</code>, <code>Game</code>, <code>PLAYER_WIDTH</code>, <code>pyxel</code>.</p>
+</aside>
+<aside class="callout callout-warning">
+<p class="callout-title"><code>IndentationError</code></p>
+<p>Le contenu d’une classe ou d’une méthode doit être décalé vers la droite. Les lignes appartenant à la même méthode doivent avoir la même indentation.</p>
+</aside>
+<aside class="callout callout-warning">
+<p class="callout-title"><code>AttributeError</code></p>
+<p>Vérifiez que les attributs sont écrits avec <code>self</code>, par exemple <code>self.x</code> et <code>self.y</code>, et que leur nom est identique dans <code>__init__()</code>, <code>update()</code> et <code>draw()</code>.</p>
+</aside>
+<aside class="callout callout-note">
+<p class="callout-title">Aucune fenêtre ne s’ouvre</p>
+<p>Vérifiez que la dernière ligne du fichier est bien présente :</p>
+<pre><code class="language-python">Game()</code></pre>
+</aside>
+<h2 id="experimentations">Expérimentations</h2>
+<p>Ces modifications sont facultatives. Elles permettent de vérifier le rôle des attributs et des constantes.</p>
+<h3>Modifier la vitesse</h3>
+<p>Remplacez :</p>
+<pre><code class="language-python">PLAYER_SPEED = 1</code></pre>
+<p>par :</p>
+<pre><code class="language-python">PLAYER_SPEED = 3</code></pre>
+<p>Observez la différence dans le déplacement.</p>
+<h3>Modifier les couleurs</h3>
+<p>Essayez une autre constante de couleur, par exemple :</p>
+<pre><code class="language-python">PLAYER_COLOR = pyxel.COLOR_RED</code></pre>
+<h3>Modifier la hauteur du sol</h3>
+<p>Changez :</p>
+<pre><code class="language-python">GROUND_Y = 224</code></pre>
+<p>Observez pourquoi il faut également recalculer la position initiale du joueur.</p>
+<h3>Ajouter un second objet</h3>
+<p>Dans <code>Game.__init__()</code>, ajoutez un deuxième joueur :</p>
+<pre><code class="language-python">self.other_player = Player(
+    80,
+    GROUND_Y - PLAYER_HEIGHT,
+)</code></pre>
+<p>Puis ajoutez les appels correspondants :</p>
+<pre><code class="language-python">self.other_player.update()</code></pre>
+<p>dans <code>Game.update()</code>, et :</p>
+<pre><code class="language-python">self.other_player.draw()</code></pre>
+<p>dans <code>Game.draw()</code>.</p>
+<p>Les deux objets utiliseront la même classe, mais chacun conservera sa propre position.</p>
+<h2 id="a-retenir">À retenir</h2>
+<ul>
+  <li><code>pyxel.init()</code> initialise la fenêtre.</li>
+  <li><code>pyxel.run(update, draw)</code> lance la boucle de jeu.</li>
+  <li><code>update()</code> modifie l’état du jeu.</li>
+  <li><code>draw()</code> affiche l’état courant.</li>
+  <li>Une classe décrit un type d’objet.</li>
+  <li><code>self</code> désigne l’objet courant.</li>
+  <li><code>Game</code> coordonne les objets du jeu.</li>
+  <li><code>Player</code> connaît son déplacement et son dessin.</li>
+  <li><code>Game()</code> crée l’objet principal et démarre l’application.</li>
+</ul>
+<p>Dans la prochaine leçon, le rectangle du joueur et le décor seront remplacés ou complétés par des éléments créés dans l’éditeur de ressources Pyxel et chargés depuis <code>res.pyxres</code>.</p>
+
+  </article>
+</body>
+</html>
