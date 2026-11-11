@@ -56,7 +56,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 5 — Niveau et tilemap | `05-tilemap/` | produite |
 | 6 — Collisions avec la tilemap | `06-collisions/` | produite |
 | 7 — Plusieurs types d’objets | `07-objets/` | produite |
-| 8 — Règles du jeu | `08-regles-du-jeu/` | à produire |
+| 8 — Règles du jeu | `08-regles-du-jeu/` | produite |
 | 9 — Animation et caméra | `09-animation-et-camera/` | à produire |
 | 10 — Audio, interface, états | `10-audio-et-scenes/` | à produire |
 | 11 — Préparation Nuit du Code | `11-nuit-du-code/` | à produire |
@@ -205,6 +205,11 @@ Game()
 | Pièces du niveau | 9, aux positions des tuiles de la tilemap | Lues par `Level.take_coins()` |
 | Ennemis | 2 : (88, 216) et (104, 144) | Écrits dans `Game.__init__()` |
 | Vitesse de l’ennemi | 1 pixel par image | Allée et retour entre deux bornes |
+| Points par pièce | 1 | `Game.score` |
+| Canal du saut | 0 | Son 0 |
+| Canal de la pièce | 1 | Son 1 |
+| Canal de la collision | 2 | Son 2 |
+| Défaite | `is_game_over` à vrai | `update()` sort immédiatement |
 | Signature des collisions | `collide(x, y, w, h, dx, dy, walls)` | Renvoie le déplacement corrigé |
 | Position du joueur sur la première plateforme | 176 | Dessus de la ligne 23 |
 | Arrêt du saut sous la première plateforme | 192 | Dessous de la ligne 23 |
@@ -231,6 +236,16 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - Une tuile appartient au décor et ne peut pas disparaître ; un objet est une instance et peut être retiré.
 - Les pièces du niveau restent des tuiles dans `res.pyxres` ; `Level.take_coins()` les efface en mémoire avec `pset()` et renvoie leurs positions en pixels.
 - Les positions écrites à la main dans une liste servent aux objets absents de la tilemap, comme les ennemis.
+
+### 7.7. Règles du jeu
+
+- Le contact entre deux objets se teste avec `Game.collide(a, b)`, qui lit `x`, `y`, `width` et `height` ; ce n’est pas une classe.
+- Les quatre inégalités sont strictes : des bords jointifs ne sont pas un contact.
+- Ne pas confondre cette méthode avec `Tilemap.collide()`, qui corrige un déplacement contre le décor.
+- Un objet qui disparaît porte `is_alive` : il est marqué pendant le parcours, puis la liste est reconstruite après la boucle.
+- Ne jamais retirer un élément d’une liste pendant qu’on la parcourt.
+- La reconstruction de liste s’écrit en compréhension, avec la boucle équivalente expliquée dans l’article.
+- L’état du jeu vit dans des attributs de `Game` (`score`, `is_game_over`) ; `update()` sort immédiatement quand la partie est terminée.
 
 ## 8. Conventions des ressources
 
@@ -290,6 +305,8 @@ La couleur 0 est la couleur transparente des sprites. Aucun dessin de sprite ne 
 | Musique 0 | Thème du niveau |
 
 Les numéros déjà attribués ne changent pas. Les ajouts prennent les numéros suivants.
+
+Chaque bruitage occupe un canal distinct : 0 pour le saut, 1 pour la pièce, 2 pour la collision.
 
 ## 9. Conventions de l’article HTML
 

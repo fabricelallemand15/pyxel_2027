@@ -768,29 +768,33 @@ pyxel.text()
 
 ### Méthode de collision simple
 
-Une fonction ou une méthode commune pourra tester deux rectangles :
+Une méthode de `Game` teste deux objets, sans connaître leur classe :
 
 ```python
-def collide(x1, y1, w1, h1, x2, y2, w2, h2):
+def collide(self, a, b):
     return (
-        x1 < x2 + w2
-        and x1 + w1 > x2
-        and y1 < y2 + h2
-        and y1 + h1 > y2
+        a.x < b.x + b.width
+        and a.x + a.width > b.x
+        and a.y < b.y + b.height
+        and a.y + a.height > b.y
     )
 ```
 
-Cette fonction ne représente pas un objet de jeu ; elle décrit une opération géométrique générale.
+Elle ne représente pas un objet de jeu ; elle décrit une opération géométrique générale. Les inégalités sont strictes : des bords jointifs ne sont pas un contact.
 
 ### Cycle de vie
 
-Un objet pourra rester dans sa liste jusqu'à la fin de la mise à jour, puis être supprimé :
+Un objet reste dans sa liste jusqu'à la fin de la mise à jour, puis la liste est reconstruite :
 
 ```python
 self.coins = [coin for coin in self.coins if coin.is_alive]
 ```
 
-La compréhension de liste sera expliquée progressivement. Une boucle classique pourra être proposée en variante pour rester plus accessible.
+La compréhension de liste est expliquée dans l'article, avec la boucle classique équivalente.
+
+### Défaite
+
+`Game.is_game_over` passe à vrai au contact d'un ennemi ; `update()` sort immédiatement et le jeu se fige jusqu'au relancement du programme.
 
 ### Défi facultatif
 
