@@ -464,6 +464,7 @@ class Game:
             if self.collide(self.player, enemy):
                 self.scene = SCENE_GAMEOVER
                 pyxel.stop()
+                pyxel.play(2, HIT_SOUND)
 
 
 Game()
@@ -529,6 +530,7 @@ SCENE_WIN = 3</code></pre>
     <pre><code class="language-python">self.scene = SCENE_WIN
 pyxel.stop()</code></pre>
     <p>Les bruitages du saut, de la pièce et de la collision continuent d’utiliser les canaux 0, 1 et 2 ; la musique occupe les canaux 0 et 1 de son côté, et Pyxel mélange le tout.</p>
+    <p>À la défaite, l’ordre des deux appels compte : <code>pyxel.stop()</code> coupe tous les canaux, y compris celui du bruitage. Le son de collision est donc joué après l’arrêt de la musique, sinon il serait interrompu aussitôt.</p>
 
     <h3>La victoire</h3>
     <pre><code class="language-python">self.check_coins()

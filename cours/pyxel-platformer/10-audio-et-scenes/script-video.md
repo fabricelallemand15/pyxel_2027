@@ -450,6 +450,7 @@ class Game:
             if self.collide(self.player, enemy):
                 self.scene = SCENE_GAMEOVER
                 pyxel.stop()
+                pyxel.play(2, HIT_SOUND)
 
 
 Game()
@@ -559,6 +560,8 @@ Game()
 > À la fin d’une partie, `pyxel.stop()` sans argument coupe tous les canaux. Plus de musique derrière l’écran de défaite.
 >
 > Les bruitages continuent d’utiliser les canaux zéro, un et deux ; la musique occupe les siens, et Pyxel mélange le tout.
+>
+> À la défaite, le bruitage est joué après l’arrêt de la musique : `pyxel.stop()` coupe tous les canaux, et un son lancé avant serait interrompu.
 
 ### 08:30 — La victoire
 

@@ -969,6 +969,19 @@ Les élèves pourront choisir au moins deux extensions :
 
 Il ne s'agit pas d'une évaluation. La checklist sert uniquement à aider l'élève à obtenir un jeu réellement jouable.
 
+### Mise en œuvre retenue
+
+- le programme de cette leçon est celui de la leçon 10 : les règles du jeu ne changent pas ;
+- deux retouches finales préparent la personnalisation : les colonnes de texte sont calculées, et les deux écrans de fin partagent une méthode ;
+- `FONT_WIDTH = 4` et `Game.text_x(texte)` renvoient `(SCREEN_WIDTH - FONT_WIDTH * len(texte)) // 2`, ce qui remplace les colonnes écrites à la main ;
+- l'écran titre devient une liste de couples `(texte, hauteur)` parcourue par une boucle ;
+- `draw_end(message, color)` est appelé par `draw_gameover()` et `draw_win()` : les deux écrans ne diffèrent que par deux valeurs ;
+- le bruitage de défaite est joué après `pyxel.stop()`, sinon l'arrêt de la musique l'interrompt ;
+- le dossier livrable se vérifie en le copiant sous un autre nom, puis en le relançant depuis la copie ;
+- la difficulté se règle avec quatre constantes : `PLAYER_SPEED`, `JUMP_SPEED`, `GRAVITY`, `ENEMY_SPEED` ;
+- l'article contient la liste des quinze contrôles et le tableau des dix personnalisations, avec le point d'intervention de chacune ;
+- la dernière page de l'article clôt la formation et renvoie au module bonus Pyxel Cube.
+
 ---
 
 # 7. Module bonus : Pyxel Cube et la 3D

@@ -59,7 +59,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 8 — Règles du jeu | `08-regles-du-jeu/` | produite |
 | 9 — Animation et caméra | `09-animation-et-camera/` | produite |
 | 10 — Audio, interface, états | `10-audio-et-scenes/` | produite |
-| 11 — Préparation Nuit du Code | `11-nuit-du-code/` | à produire |
+| 11 — Préparation Nuit du Code | `11-nuit-du-code/` | produite |
 | Bonus — Pyxel Cube | `bonus-cube/` | à produire |
 
 Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.html`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute.
@@ -288,6 +288,17 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - Les commentaires, les articles, les scripts et les messages d’erreur gardent leur typographie accentuée.
 - Une police complète reste possible avec la classe `Font` et un fichier BDF, OTF ou TTF ; elle ajouterait un fichier au projet, ce que la Nuit du Code interdit.
 
+### 7.11. Finalisation et livraison
+
+- Les leçons 10 et 11 partagent le même jeu : la onzième ne change pas les règles, elle prépare le rendu.
+- Une colonne de texte centré se calcule avec `Game.text_x()`, jamais à la main : renommer un texte ne doit rien décaler.
+- Un écran composé de plusieurs lignes se décrit par une liste de couples `(texte, hauteur)` parcourue par une boucle.
+- Deux dessins qui ne diffèrent que par un message et une couleur deviennent une méthode à paramètres, pas deux méthodes jumelles.
+- Un son joué au moment d'une fin se place après `pyxel.stop()` : l'arrêt coupe tous les canaux.
+- Le dossier livrable contient `main.py` et `res.pyxres`, rien d'autre ; il se vérifie en le copiant sous un autre nom et en le relançant.
+- La difficulté se règle par `PLAYER_SPEED`, `JUMP_SPEED`, `GRAVITY` et `ENEMY_SPEED` ; toute modification se valide par une partie complète.
+- L'article de la leçon 11 termine la formation et renvoie au module bonus.
+
 ## 8. Conventions des ressources
 
 ### 8.1. Génération
@@ -498,6 +509,7 @@ Vérifier également, par lecture ou par script :
 - le script vidéo décrit le même code que l’article ;
 - la fenêtre mesure 256 × 256 et le niveau 64 × 32 tuiles ;
 - les textes passés à `pyxel.text()` ne contiennent que des caractères ASCII ;
+- le dossier d'une leçon ne contient que `main.py`, `res.pyxres`, `article.html` et `script-video.md` ;
 - aucun fichier généré inutile n’est ajouté au dépôt.
 
 Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’indiquer explicitement et limiter la validation à ce qui est vérifiable.
