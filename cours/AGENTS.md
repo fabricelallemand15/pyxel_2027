@@ -58,7 +58,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 7 — Plusieurs types d’objets | `07-objets/` | produite |
 | 8 — Règles du jeu | `08-regles-du-jeu/` | produite |
 | 9 — Animation et caméra | `09-animation-et-camera/` | produite |
-| 10 — Audio, interface, états | `10-audio-et-scenes/` | à produire |
+| 10 — Audio, interface, états | `10-audio-et-scenes/` | produite |
 | 11 — Préparation Nuit du Code | `11-nuit-du-code/` | à produire |
 | Bonus — Pyxel Cube | `bonus-cube/` | à produire |
 
@@ -262,6 +262,22 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - `pyxel.camera()` sans argument remet le décalage à zéro avant l’interface.
 - Le joueur est limité par `level.width`, plus par la taille de la fenêtre.
 
+### 7.9. États du jeu, audio et interface
+
+- L’état du jeu est une constante unique (`SCENE_TITLE`, `SCENE_PLAY`, `SCENE_GAMEOVER`, `SCENE_WIN`), pas une combinaison de booléens.
+- `update()` et `draw()` aiguillent par `if`/`elif` vers `update_title()`, `update_play()`, etc. ; chaque méthode ne connaît que son état.
+- La touche `Q` est testée avant l’aiguillage, pour fonctionner dans tous les états.
+- `__init__()` ne construit aucun objet de jeu : la partie naît dans `start_game()`, appelée depuis le titre et depuis les écrans de fin.
+- `start_game()` commence par `pyxel.load()` : sans ce rechargement, la deuxième partie serait vide, puisque `take_coins()` efface les tuiles de pièce.
+- La victoire se teste avant les ennemis, avec `return` ; sinon un contact dans la même image remplacerait la victoire par la défaite.
+- La musique démarre avec la partie, en boucle (`pyxel.playm(0, loop=True)`), et s’arrête avec `pyxel.stop()` à la victoire comme à la défaite.
+- Ce `stop()` remplace `is_game_over` de la leçon 8 : l’état de fin est porté par la scène.
+- L’interface ne comporte que deux lignes, dessinées après `pyxel.camera()` : le score et les pièces restantes.
+- La police intégrée ne contient que l’ASCII imprimable : une lettre accentuée n’est pas dessinée. Les textes affichés par `pyxel.text()` sont donc choisis sans accent (`Restantes`, `Victoire`, `Gauche et droite : marcher`) ; le titre de la fenêtre et les commentaires gardent les leurs.
+- `bltm()` reçoit la couleur 0 comme clé de transparence : sans elle, les cases vides du niveau recouvrent le fond en noir.
+- Les textes des écrans de titre et de fin sont centrés avec la règle des 4 pixels par caractère : colonne `(256 - 4 * len(texte)) // 2`.
+- `draw_gameover()` et `draw_win()` rappellent `draw_play()` pour garder le décor figé derrière le message.
+
 ## 8. Conventions des ressources
 
 ### 8.1. Génération
@@ -324,6 +340,8 @@ La couleur 0 est la couleur transparente des sprites. Aucun dessin de sprite ne 
 Les numéros déjà attribués ne changent pas. Les ajouts prennent les numéros suivants.
 
 Chaque bruitage occupe un canal distinct : 0 pour le saut, 1 pour la pièce, 2 pour la collision.
+
+La ressource ne contient qu’une seule musique, le thème du niveau : une musique par écran suppose d’en composer une seconde dans l’éditeur.
 
 ## 9. Conventions de l’article HTML
 
@@ -468,6 +486,7 @@ Vérifier également, par lecture ou par script :
 - les liens de la feuille de style et des ancres sont valides ;
 - le script vidéo décrit le même code que l’article ;
 - la fenêtre mesure 256 × 256 et le niveau 64 × 32 tuiles ;
+- les textes passés à `pyxel.text()` ne contiennent que des caractères ASCII ;
 - aucun fichier généré inutile n’est ajouté au dépôt.
 
 Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’indiquer explicitement et limiter la validation à ce qui est vérifiable.

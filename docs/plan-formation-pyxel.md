@@ -898,6 +898,22 @@ def update_gameover(self):
     ...
 ```
 
+### Mise en œuvre retenue
+
+- quatre constantes d'état : `SCENE_TITLE = 0`, `SCENE_PLAY = 1`, `SCENE_GAMEOVER = 2`, `SCENE_WIN = 3` ;
+- `update()` et `draw()` commencent par tester la touche `Q`, puis aiguillent par `if`/`elif` vers `update_title()`/`draw_title()`, `update_play()`/`draw_play()`, `update_gameover()`/`draw_gameover()` et `update_win()`/`draw_win()` ;
+- `__init__()` ne crée aucun objet de jeu : il initialise `self.scene` et `self.score`, puis appelle `pyxel.run()` ;
+- `start_game()`, appelée par la barre d'espace depuis le titre ou les écrans de fin, recharge `res.pyxres` avec `pyxel.load()`, construit le niveau, le joueur, les pièces et trois ennemis, remet le score à zéro, passe à `SCENE_PLAY` et lance `pyxel.playm(0, loop=True)` ;
+- le rechargement est indispensable : `take_coins()` efface les tuiles de pièce, donc une deuxième partie sans `pyxel.load()` serait vide ;
+- `update_play()` teste la victoire avant les ennemis, avec `return`, pour que la dernière pièce l'emporte sur un contact simultané ;
+- `pyxel.stop()` coupe la musique à la victoire comme à la défaite ;
+- interface en deux lignes seulement, « Score : n » et « Restantes : n », dessinées après la remise à zéro de la caméra ;
+- textes dessinés sans accent, la police intégrée de Pyxel ne contenant que l’ASCII ;
+- `bltm()` reçoit la couleur 0 comme clé de transparence, pour que les cases vides laissent voir le fond ;
+- écrans de titre et de fin centrés avec la règle des 4 pixels par caractère, colonne `(256 - 4 * len(texte)) // 2` ;
+- `draw_gameover()` et `draw_win()` réutilisent `draw_play()` pour garder le décor figé derrière le message ;
+- une seule musique dans la ressource : le défi « une musique par écran » reste une expérimentation, faute de seconde piste.
+
 ### Défi facultatif
 
 Créer une musique différente pour l'écran titre et l'écran de victoire.
