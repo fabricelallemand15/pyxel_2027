@@ -31,9 +31,5 @@ test-results/
 # Local shortcuts
 /examples
 
-# Quarto
-cours/**/*.html
-cours/**/*_files/
-
 # OS
 .DS_Store
