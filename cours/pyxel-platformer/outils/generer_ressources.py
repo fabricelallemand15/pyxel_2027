@@ -134,6 +134,17 @@ PLATFORM = (
     "dddddddd",
 )
 
+ENEMY = (
+    "..oooo..",
+    ".orrrro.",
+    "orrrrrro",
+    "ornrrnro",
+    "orrrrrro",
+    "orrrrrro",
+    ".orrrro.",
+    "..oooo..",
+)
+
 COIN = (
     "..yyyy..",
     ".yyyyyy.",
@@ -162,6 +173,7 @@ TILES = {
     (1, 0): ("joueur repos 1", PLAYER_IDLE_1),
     (2, 0): ("joueur marche 0", PLAYER_WALK_0),
     (3, 0): ("joueur marche 1", PLAYER_WALK_1),
+    (4, 0): ("ennemi", ENEMY),
     (0, 1): ("sol, dessus", GROUND_TOP),
     (1, 1): ("sol, remplissage", GROUND_FILL),
     (2, 1): ("plateforme", PLATFORM),

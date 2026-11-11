@@ -284,6 +284,8 @@ musiques  -> pyxel.playm()
 >
 > Les quatre premières cases de la ligne 0 contiennent le personnage : deux images au repos, deux images de marche. Les images de marche ne sont pas encore utilisées : elles serviront pour l’animation.
 >
+> La cinquième case de cette ligne contient l’ennemi, qui apparaîtra dans une leçon suivante.
+>
 > La ligne 1 contient le décor : le dessus du sol, le remplissage du sol, une plateforme, une pièce et un buisson.
 
 **Action :** dessiner quelques pixels dans la tuile du personnage pour montrer que la modification se répercutera dans le jeu, puis annuler avec Ctrl+Z.

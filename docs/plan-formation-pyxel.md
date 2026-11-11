@@ -227,6 +227,7 @@ Contenu livré avec la leçon 2 :
 
 - frames du joueur au repos : tuiles (0, 0) et (1, 0) ;
 - frames du joueur en déplacement : tuiles (2, 0) et (3, 0) ;
+- ennemi : tuile (4, 0) ;
 - dessus du sol : tuile (0, 1) ;
 - remplissage du sol : tuile (1, 1) ;
 - plateforme : tuile (2, 1) ;
@@ -239,7 +240,7 @@ Niveau de 32 × 32 tuiles, soit 256 × 256 pixels :
 
 - sol à partir de la ligne 28 ;
 - trois plateformes étagées aux lignes 23, 19 et 15 ;
-- neuf pièces, trois par plateforme ;
+- neuf pièces, trois par plateforme ; elles deviennent des objets à la leçon 7 ;
 - trois buissons décoratifs sur le sol.
 
 #### Sons
@@ -255,7 +256,7 @@ Niveau de 32 × 32 tuiles, soit 256 × 256 pixels :
 
 Les ressources seront étendues au fil des leçons :
 
-- ennemi et sortie du niveau ;
+- sortie du niveau et cases spéciales ;
 - cases de bord et cases spéciales ;
 - bruitage de victoire ou de défaite ;
 - musique de titre.
@@ -709,14 +710,16 @@ Ajouter une plateforme traversable dans un seul sens, ou une case dangereuse.
 
 ### Structure
 
+Les pièces existent déjà dans la tilemap : `Level.take_coins()` les efface en mémoire avec `pset()` et renvoie leurs positions, que `Game` transforme en objets.
+
 ```python
-self.coins = [
-    Coin(48, 80),
-    Coin(96, 56),
-]
+self.coins = []
+for x, y in self.level.take_coins():
+    self.coins.append(Coin(x, y))
 
 self.enemies = [
-    Enemy(120, 80),
+    Enemy(88, 216, 88, 160),
+    Enemy(104, 144, 104, 160),
 ]
 ```
 

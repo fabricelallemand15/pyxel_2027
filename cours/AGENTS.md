@@ -55,7 +55,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 4 — Gravité et saut | `04-gravite-et-saut/` | produite |
 | 5 — Niveau et tilemap | `05-tilemap/` | produite |
 | 6 — Collisions avec la tilemap | `06-collisions/` | produite |
-| 7 — Plusieurs types d’objets | `07-objets/` | à produire |
+| 7 — Plusieurs types d’objets | `07-objets/` | produite |
 | 8 — Règles du jeu | `08-regles-du-jeu/` | à produire |
 | 9 — Animation et caméra | `09-animation-et-camera/` | à produire |
 | 10 — Audio, interface, états | `10-audio-et-scenes/` | à produire |
@@ -200,6 +200,11 @@ Game()
 | Hauteur du saut | environ 55 pixels | Mesurée au sommet de la trajectoire |
 | Tuiles solides | (0, 1), (1, 1), (2, 1) | Sol, remplissage, plateforme |
 | Case vide de la tilemap | (5, 5) | Zone transparente de la banque |
+| Tuile de la pièce | (3, 1) | Banque d’images |
+| Tuile de l’ennemi | (4, 0) | Banque d’images |
+| Pièces du niveau | 9, aux positions des tuiles de la tilemap | Lues par `Level.take_coins()` |
+| Ennemis | 2 : (88, 216) et (104, 144) | Écrits dans `Game.__init__()` |
+| Vitesse de l’ennemi | 1 pixel par image | Allée et retour entre deux bornes |
 | Signature des collisions | `collide(x, y, w, h, dx, dy, walls)` | Renvoie le déplacement corrigé |
 | Position du joueur sur la première plateforme | 176 | Dessus de la ligne 23 |
 | Arrêt du saut sous la première plateforme | 192 | Dessous de la ligne 23 |
@@ -215,6 +220,17 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - `SOLID_TILES` est une liste de tuiles de la banque d’images, pas de cases du niveau.
 - L’état « au sol » se déduit du résultat : un déplacement vertical annulé alors que l’objet tombait.
 - `is_solid()` n’est pas conservée après la leçon 6 : `collide()` couvre le besoin.
+
+### 7.6. Objets du jeu
+
+- Un type d’élément du jeu = une classe, avec `update()` et `draw()`.
+- Une méthode `update()` peut rester vide (`pass`) : elle fait partie de l’interface commune.
+- Les instances d’un même type sont rangées dans une liste, construite une seule fois dans `Game.__init__()`.
+- Les listes sont parcourues par des boucles séparées dans `update()` et dans `draw()` ; jamais d’appel nommé objet par objet.
+- Ordre du dessin : fond, niveau, pièces, ennemis, joueur, textes.
+- Une tuile appartient au décor et ne peut pas disparaître ; un objet est une instance et peut être retiré.
+- Les pièces du niveau restent des tuiles dans `res.pyxres` ; `Level.take_coins()` les efface en mémoire avec `pset()` et renvoie leurs positions en pixels.
+- Les positions écrites à la main dans une liste servent aux objets absents de la tilemap, comme les ennemis.
 
 ## 8. Conventions des ressources
 
@@ -243,6 +259,7 @@ Pour une nouvelle leçon, recopier `outils/res.pyxres` dans le dossier de la le�
 | (1, 0) | Joueur au repos, image 1 |
 | (2, 0) | Joueur en marche, image 0 |
 | (3, 0) | Joueur en marche, image 1 |
+| (4, 0) | Ennemi |
 | (0, 1) | Sol, tuile du dessus |
 | (1, 1) | Sol, remplissage |
 | (2, 1) | Plateforme |
@@ -258,7 +275,8 @@ La couleur 0 est la couleur transparente des sprites. Aucun dessin de sprite ne 
 - niveau de 32 × 32 tuiles ;
 - sol à partir de la ligne 28 ;
 - plateau technique : une case vide référence la tuile (5, 5), zone transparente de la banque ;
-- les cases situées hors du niveau utilisent également la tuile (5, 5).
+- les cases situées hors du niveau utilisent également la tuile (5, 5) ;
+- neuf tuiles de pièce sur les lignes 22, 18 et 14 ; la leçon 7 les remplace en mémoire par des objets.
 
 ### 8.4. Sons et musiques
 
