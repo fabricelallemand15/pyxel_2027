@@ -300,7 +300,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 9 - animation et caméra",
+            title="Chapitre 9 - animation et camera",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -370,19 +370,19 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 9 - animation et caméra",
+            "Chapitre 9 - animation et camera",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             20,
-            f"Score : {self.score}  Pièces : {len(self.coins)}",
+            f"Score : {self.score}  Restantes : {len(self.coins)}",
             TEXT_COLOR,
         )
 
@@ -550,6 +550,11 @@ pyxel.camera()</code></pre>
 )</code></pre>
     <p>Depuis la leçon 3, le joueur était retenu par les bords de la fenêtre. Avec un niveau plus large, cette limite deviendrait un mur invisible au milieu du décor. Le joueur est désormais retenu par les bords du niveau : 0 à gauche, 504 à droite.</p>
     <p>La collision avec la tilemap, elle, ne change pas : <code>move_player()</code> utilise toujours la liste des tuiles solides.</p>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Les accents à l’écran</p>
+      <p>Le titre affiché écrit « camera » sans accent, comme la fonction <code>pyxel.camera</code> (voir la leçon 1).</p>
+    </aside>
 
     <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
     <div class="table-wrapper">

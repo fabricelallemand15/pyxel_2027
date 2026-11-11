@@ -48,7 +48,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 1 - Boucle de jeu",
+            title="Chapitre 1 - Boucle de jeu",
         )
 
         self.player = Player(
@@ -76,7 +76,7 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 1 - boucle de jeu",
+            "Chapitre 1 - boucle de jeu",
             TEXT_COLOR,
         )
         pyxel.text(

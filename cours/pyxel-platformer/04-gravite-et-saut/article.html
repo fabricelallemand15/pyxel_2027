@@ -174,7 +174,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 4 - gravité",
+            title="Chapitre 4 - chute et saut",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -200,20 +200,21 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 4 - gravité",
+            "Chapitre 4 - chute et saut",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
 
         self.player.draw()
 
 
-Game()</code></pre>
+Game()
+</code></pre>
     <p>Le résultat attendu :</p>
     <ul>
       <li>le joueur est posé sur le sol au démarrage ;</li>
@@ -305,6 +306,11 @@ else:
       <p class="callout-title">Où jouer un son</p>
       <p>Le joueur connaît la règle qui déclenche le saut : il peut donc jouer le son lui-même.</p>
       <p>Une autre organisation consisterait à signaler le saut par un attribut et à laisser <code>Game</code> jouer le son. Cette forme ajoute une étape et ne sera utilisée que si plusieurs objets doivent réagir au même événement.</p>
+    </aside>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Les accents à l’écran</p>
+      <p>Le titre affiché dit « chute et saut » plutôt que « gravité » : l’accent de « gravité » n’existe pas dans la police (voir la leçon 1).</p>
     </aside>
 
     <h2 id="verifier-le-resultat">Vérifier le résultat</h2>

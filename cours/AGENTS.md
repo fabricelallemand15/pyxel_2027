@@ -273,10 +273,20 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - La musique démarre avec la partie, en boucle (`pyxel.playm(0, loop=True)`), et s’arrête avec `pyxel.stop()` à la victoire comme à la défaite.
 - Ce `stop()` remplace `is_game_over` de la leçon 8 : l’état de fin est porté par la scène.
 - L’interface ne comporte que deux lignes, dessinées après `pyxel.camera()` : le score et les pièces restantes.
-- La police intégrée ne contient que l’ASCII imprimable : une lettre accentuée n’est pas dessinée. Les textes affichés par `pyxel.text()` sont donc choisis sans accent (`Restantes`, `Victoire`, `Gauche et droite : marcher`) ; le titre de la fenêtre et les commentaires gardent les leurs.
+- Les textes de l’interface suivent la règle du §7.10 : sans accent, avec `Restantes` et `Victoire`.
 - `bltm()` reçoit la couleur 0 comme clé de transparence : sans elle, les cases vides du niveau recouvrent le fond en noir.
 - Les textes des écrans de titre et de fin sont centrés avec la règle des 4 pixels par caractère : colonne `(256 - 4 * len(texte)) // 2`.
 - `draw_gameover()` et `draw_win()` rappellent `draw_play()` pour garder le décor figé derrière le message.
+
+### 7.10. Textes affichés
+
+- La police intégrée de Pyxel ne contient que les caractères ASCII imprimables, de l’espace au code 127. Un caractère accentué ou cédillé n’est pas dessiné et ne décale même pas le curseur : « leçon » s’affiche « lecon ».
+- Tout texte passé à `pyxel.text()`, et tout titre passé à `pyxel.init()`, est donc écrit en ASCII.
+- Le mot `Chapitre` remplace `Leçon` à l’écran : la cédille n’existe pas dans la police. Le cours continue d’appeler ses étapes des leçons.
+- Vocabulaire retenu à l’écran : `Chapitre N - <thème>`, `Gauche et droite : marcher, Espace : sauter`, `Score : n`, `Restantes : n`, `Partie perdue`, `Victoire`, `Espace : revenir au titre`.
+- Les thèmes de chapitre évitent les accents : `chute et saut` plutôt que `gravité`, `but du jeu` plutôt que `règles du jeu`, `camera` plutôt que `caméra`.
+- Les commentaires, les articles, les scripts et les messages d’erreur gardent leur typographie accentuée.
+- Une police complète reste possible avec la classe `Font` et un fichier BDF, OTF ou TTF ; elle ajouterait un fichier au projet, ce que la Nuit du Code interdit.
 
 ## 8. Conventions des ressources
 
@@ -455,6 +465,7 @@ Règles :
 - Une notion par paragraphe, paragraphes courts.
 - Typographie française : guillemets « », espaces insécables avant les deux-points, le point-virgule, le point d’interrogation et le point d’exclamation.
 - Apostrophe typographique « ’ » dans les articles et les scripts ; apostrophe droite dans le code Python.
+- Les chaînes affichées dans la fenêtre du jeu sont en ASCII, sans accent ni cédille (§7.10).
 
 ## 12. Procédure de production d’une leçon
 

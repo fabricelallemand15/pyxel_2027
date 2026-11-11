@@ -271,7 +271,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 7 - plusieurs objets",
+            title="Chapitre 7 - plusieurs objets",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -321,19 +321,19 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 7 - plusieurs objets",
+            "Chapitre 7 - plusieurs objets",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             20,
-            f"Pièces : {len(self.coins)}  Ennemis : {len(self.enemies)}",
+            f"Restantes : {len(self.coins)}  Ennemis : {len(self.enemies)}",
             TEXT_COLOR,
         )
 
@@ -487,6 +487,11 @@ for enemy in self.enemies:
     </div>
     <p><code>COIN_TILE</code> et <code>ENEMY_TILE</code> gardent les coordonnées de tuiles ; la multiplication par <code>TILE_SIZE</code> donne les coordonnées en pixels attendues par <code>pyxel.blt()</code>. Les deux valeurs se lisent d’un coup d’œil, sans nombre magique.</p>
 
+    <aside class="callout callout-note">
+      <p class="callout-title">Les accents à l’écran</p>
+      <p>Le compteur affiche « Restantes » et non « Pièces » : la police de Pyxel ne dessine pas le è (voir la leçon 1).</p>
+    </aside>
+
     <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
     <div class="table-wrapper">
       <table>
@@ -494,7 +499,7 @@ for enemy in self.enemies:
           <tr><th>Point à vérifier</th><th>Résultat attendu</th></tr>
         </thead>
         <tbody>
-          <tr><td>Au démarrage</td><td><code>Pièces : 9  Ennemis : 2</code></td></tr>
+          <tr><td>Au démarrage</td><td><code>Restantes : 9  Ennemis : 2</code></td></tr>
           <tr><td>Les pièces</td><td>Neuf pièces jaunes posées sur les trois plateformes</td></tr>
           <tr><td>La tilemap</td><td>Aucune pièce dessinée par le décor : les pièces sont des objets</td></tr>
           <tr><td>L’ennemi du sol</td><td>Va et vient entre 88 et 160, posé sur le sol</td></tr>
@@ -544,7 +549,7 @@ for enemy in self.enemies:
     <h3>Ajouter une pièce dans l’éditeur</h3>
     <p>Placez une tuile de pièce dans la tilemap, au-dessus du sol par exemple, puis relancez le programme.</p>
     <pre><code class="language-python">self.tilemap.pset(12, 27, COIN_TILE)</code></pre>
-    <p>Cette ligne, ajoutée au début de <code>take_coins()</code>, produit le même effet sans ouvrir l’éditeur. Le compteur affiche <code>Pièces : 10</code> : aucune autre ligne n’a changé.</p>
+    <p>Cette ligne, ajoutée au début de <code>take_coins()</code>, produit le même effet sans ouvrir l’éditeur. Le compteur affiche <code>Restantes : 10</code> : aucune autre ligne n’a changé.</p>
 
     <h3>Un troisième ennemi</h3>
     <pre><code class="language-python">Enemy(192, 112, 192, 224),</code></pre>

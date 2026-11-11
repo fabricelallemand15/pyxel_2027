@@ -274,7 +274,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 8 - règles du jeu",
+            title="Chapitre 8 - but du jeu",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -333,19 +333,19 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 8 - règles du jeu",
+            "Chapitre 8 - but du jeu",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             20,
-            f"Score : {self.score}  Pièces : {len(self.coins)}",
+            f"Score : {self.score}  Restantes : {len(self.coins)}",
             TEXT_COLOR,
         )
 
@@ -516,6 +516,11 @@ self.coins = alive_coins</code></pre>
     <p>Dans <code>update()</code>, les pièces sont testées avant les ennemis. Si le joueur attrape une pièce et touche un ennemi pendant la même image, la pièce compte puis la partie s’arrête : le score final inclut la pièce ramassée.</p>
     <p>Inverser les deux appels ne change rien au déclenchement de la défaite, seulement ce détail de comptage.</p>
 
+    <aside class="callout callout-note">
+      <p class="callout-title">Les accents à l’écran</p>
+      <p>Le titre affiché dit « but du jeu » plutôt que « règles du jeu », et le compteur « Restantes » plutôt que « Pièces » : les accents n’existent pas dans la police (voir la leçon 1).</p>
+    </aside>
+
     <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
     <div class="table-wrapper">
       <table>
@@ -523,10 +528,10 @@ self.coins = alive_coins</code></pre>
           <tr><th>Point à vérifier</th><th>Résultat attendu</th></tr>
         </thead>
         <tbody>
-          <tr><td>Au démarrage</td><td><code>Score : 0  Pièces : 9</code></td></tr>
+          <tr><td>Au démarrage</td><td><code>Score : 0  Restantes : 9</code></td></tr>
           <tr><td>Contact avec une pièce</td><td>La pièce disparaît, le score augmente, un bruit aigu se fait entendre</td></tr>
           <tr><td>Repasser sur la même case</td><td>Plus de pièce, plus de point</td></tr>
-          <tr><td>Le compteur</td><td><code>Score : 3  Pièces : 6</code> après trois pièces</td></tr>
+          <tr><td>Le compteur</td><td><code>Score : 3  Restantes : 6</code> après trois pièces</td></tr>
           <tr><td>Contact avec un ennemi</td><td>Le jeu s’arrête, le message <code>Partie perdue</code> s’affiche</td></tr>
           <tr><td>Après la défaite</td><td>Les ennemis ne bougent plus, les flèches n’ont plus d’effet</td></tr>
           <tr><td>Touche <code>Q</code></td><td>Ferme toujours l’application</td></tr>

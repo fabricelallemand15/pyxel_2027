@@ -202,7 +202,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 8 - règles du jeu",
+            title="Chapitre 8 - but du jeu",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -261,19 +261,19 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 8 - règles du jeu",
+            "Chapitre 8 - but du jeu",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             20,
-            f"Score : {self.score}  Pièces : {len(self.coins)}",
+            f"Score : {self.score}  Restantes : {len(self.coins)}",
             TEXT_COLOR,
         )
 

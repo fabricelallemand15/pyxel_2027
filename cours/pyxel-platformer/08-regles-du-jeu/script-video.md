@@ -45,7 +45,7 @@ La distinction est importante : `move_player()` corrige un déplacement contre l
 
 ### Vérifications avant d’enregistrer
 
-- L’affichage indique `Score : 0  Pièces : 9` au démarrage.
+- L’affichage indique `Score : 0  Restantes : 9` au démarrage.
 - Toucher une pièce la fait disparaître, augmente le score et joue le bruitage.
 - Repasser au même endroit ne rapporte plus rien.
 - Toucher un ennemi affiche `Partie perdue` et fige le jeu.
@@ -259,7 +259,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 8 - règles du jeu",
+            title="Chapitre 8 - but du jeu",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -318,19 +318,19 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 8 - règles du jeu",
+            "Chapitre 8 - but du jeu",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             20,
-            f"Score : {self.score}  Pièces : {len(self.coins)}",
+            f"Score : {self.score}  Restantes : {len(self.coins)}",
             TEXT_COLOR,
         )
 

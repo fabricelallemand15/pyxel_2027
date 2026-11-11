@@ -293,7 +293,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 10 - interface",
+            title="Chapitre 10 - interface",
         )
 
         self.scene = SCENE_TITLE
@@ -585,9 +585,9 @@ colonne = (256 - 4 × nombre de caractères) // 2
 
 > En jeu, deux lignes suffisent : le score et le nombre de pièces restantes. Elles sont dessinées après la remise à zéro de la caméra, donc elles restent fixes pendant le défilement.
 >
-> Le libellé évite l’accent : la police intégrée de Pyxel ne contient que l’ASCII, et une lettre accentuée n’est pas dessinée. « Pièces » s’afficherait « Pices ». Les textes choisis pour l’interface s’en passent donc : « Restantes », « Victoire », « Gauche et droite : marcher ».
+> Le libellé évite l’accent : la police intégrée de Pyxel ne contient que l’ASCII, et une lettre accentuée n’est pas dessinée. « Pièces » s’afficherait « Pices », et « leçon » s’afficherait « lecon ». Les textes choisis pour l’interface s’en passent donc : « Restantes », « Victoire », « Gauche et droite : marcher ».
 >
-> Le titre de la fenêtre, lui, garde ses accents : il n’est pas dessiné par la police du jeu.
+> C’est également pour cette raison que le titre écrit « Chapitre » : la cédille de « leçon » n’existe pas dans cette police. Le titre passé à `pyxel.init()` est dessiné par le système et accepterait des accents, mais il reprend le même texte, pour rester cohérent d’une leçon à l’autre.
 >
 > Sur les écrans de titre et de fin, les textes sont centrés. Dans la police de Pyxel, un caractère mesure quatre pixels de large : un texte de n caractères occupe quatre n pixels, et commence à la colonne 256 moins cette largeur, divisé par deux.
 >

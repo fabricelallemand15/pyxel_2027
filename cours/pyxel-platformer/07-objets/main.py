@@ -199,7 +199,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 7 - plusieurs objets",
+            title="Chapitre 7 - plusieurs objets",
         )
         pyxel.load(RESOURCE_FILE)
 
@@ -249,19 +249,19 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 7 - plusieurs objets",
+            "Chapitre 7 - plusieurs objets",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             12,
-            "Flèches : déplacer, Espace : sauter",
+            "Gauche et droite : marcher, Espace : sauter",
             TEXT_COLOR,
         )
         pyxel.text(
             4,
             20,
-            f"Pièces : {len(self.coins)}  Ennemis : {len(self.enemies)}",
+            f"Restantes : {len(self.coins)}  Ennemis : {len(self.enemies)}",
             TEXT_COLOR,
         )
 

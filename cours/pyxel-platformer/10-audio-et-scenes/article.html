@@ -307,7 +307,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 10 - interface",
+            title="Chapitre 10 - interface",
         )
 
         self.scene = SCENE_TITLE
@@ -583,12 +583,14 @@ pyxel.text(4, 12, f"Restantes : {len(self.coins)}", TEXT_COLOR)</code></pre>
     </div>
     <p>Ces colonnes sont écrites en dur dans le code : la police ne change pas, et le calcul est fait une fois pour toutes. Une légère imprécision ne se voit pas.</p>
 
-    <h3>Les accents à l’écran</h3>
-    <p>La police intégrée à Pyxel ne contient que les caractères ASCII imprimables. Une lettre accentuée n’est pas dessinée du tout : elle est ignorée, et le curseur ne se décale même pas.</p>
-    <p>Une ligne comme <code>f"Pièces : {len(self.coins)}"</code> s’afficherait donc <code>Pices : 18</code>. Pour éviter ce genre de surprise, les textes affichés par <code>pyxel.text()</code> sont choisis sans accent : <code>Restantes</code>, <code>Victoire</code>, <code>Gauche et droite : marcher</code>.</p>
+    <h3>Les accents et la cédille à l’écran</h3>
+    <p>La police intégrée à Pyxel ne contient que les caractères ASCII imprimables, de l’espace au cent vingt-sept. Une lettre accentuée ou une cédille n’est pas dessinée du tout : elle est ignorée, et le curseur ne se décale même pas.</p>
+    <p>Une ligne comme <code>f"Pièces : {len(self.coins)}"</code> s’afficherait donc <code>Pices : 18</code>, et <code>"Leçon"</code> donnerait <code>Lecon</code>. Pour éviter ces lettres perdues, les textes affichés par <code>pyxel.text()</code> sont écrits sans accent : <code>Restantes</code>, <code>Victoire</code>, <code>Gauche et droite : marcher</code>.</p>
+    <p>C’est aussi la raison du mot <code>Chapitre</code> dans le titre de la fenêtre et dans l’interface : la cédille de « leçon » n’existe pas dans cette police. Ce que la formation appelle une leçon, le jeu l’appelle un chapitre, et les deux mots désignent la même étape.</p>
     <aside class="callout callout-note">
       <p class="callout-title">Les accents restent utiles ailleurs</p>
-      <p>Le titre de la fenêtre, les commentaires du code et les messages d’erreur peuvent contenir des accents : ils ne passent pas par la police du jeu. Une police complète est possible avec la classe <code>Font</code>, qui charge un fichier BDF, OTF ou TTF ; elle demande un fichier de plus, hors du cadre de la Nuit du Code.</p>
+      <p>Le titre passé à <code>pyxel.init()</code> est dessiné par le système, pas par la police du jeu : il accepterait des accents. Il reprend pourtant le même texte, pour que le code reste cohérent d’une leçon à l’autre.</p>
+      <p>Les commentaires, les articles et les messages d’erreur gardent leurs accents. Une police complète est possible avec la classe <code>Font</code>, qui charge un fichier BDF, OTF ou TTF ; elle demande un fichier de plus, hors du cadre de la Nuit du Code.</p>
     </aside>
 
     <h3>Les écrans de fin</h3>

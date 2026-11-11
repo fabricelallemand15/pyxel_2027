@@ -100,7 +100,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 1 - Boucle de jeu",
+            title="Chapitre 1 - Boucle de jeu",
         )
 
         self.player = Player(
@@ -128,7 +128,7 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 1 - boucle de jeu",
+            "Chapitre 1 - boucle de jeu",
             TEXT_COLOR,
         )
         pyxel.text(
@@ -350,7 +350,7 @@ class Game:
         pyxel.init(
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
-            title="Leçon 1 - Boucle de jeu",
+            title="Chapitre 1 - Boucle de jeu",
         )
 ```
 
@@ -443,7 +443,7 @@ class Game:
         pyxel.text(
             4,
             4,
-            "Leçon 1 - boucle de jeu",
+            "Chapitre 1 - boucle de jeu",
             TEXT_COLOR,
         )
         pyxel.text(
@@ -456,9 +456,11 @@ class Game:
 
 **Narration :**
 
-> `pyxel.text()` affiche deux informations : le nom de la leçon et le numéro de l’image courant.
+> `pyxel.text()` affiche deux informations : le nom du chapitre et le numéro de l’image courant.
 >
 > `pyxel.frame_count` est un compteur fourni par Pyxel. Il augmente au fil de l’exécution et permet notamment de créer des animations.
+>
+> Le mot « chapitre » surprendra peut-être : la police intégrée de Pyxel ne contient que les caractères ASCII, et la cédille de « leçon » n’est pas dessinée. Le titre écrit donc « chapitre », sans accent, comme toutes les chaînes affichées à l’écran. La formation continue d’appeler ces étapes des leçons ; c’est le même découpage.
 
 **À l’écran :** terminer `draw()` avec :
 
