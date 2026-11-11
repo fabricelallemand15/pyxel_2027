@@ -559,7 +559,7 @@ Défi : modifier le déplacement automatique du joueur.
 - Utiliser un cadrage rapproché de l’éditeur lors de la saisie des classes.
 - Afficher les mots `update`, `draw`, `self.player` et `pyxel.run()` dans le zoom de code lorsque ces éléments sont expliqués.
 - Ne pas ajouter de musique de fond à la vidéo : la musique Pyxel sera introduite dans la leçon 2.
-- Conserver le même code final dans la vidéo et dans l’article.
+- Conserver le même code final dans la vidéo et dans l’article HTML.
 - Ne pas afficher de ressource graphique externe dans cette leçon.
 
 ## Vérification avant publication
@@ -570,5 +570,5 @@ Défi : modifier le déplacement automatique du joueur.
 - Le joueur ne dépasse pas les bords de l’écran.
 - Le joueur reste posé sur le sol.
 - Le numéro d’image est visible.
-- Le code présenté dans la vidéo est identique au code de l’article `.qmd`.
+- Le code présenté dans la vidéo est identique à celui de l’article `article.html`.
 - La vidéo ne suppose pas que la POO ou le fichier `.pyxres` ont déjà été étudiés.

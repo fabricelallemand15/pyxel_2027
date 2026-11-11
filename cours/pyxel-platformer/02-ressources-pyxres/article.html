@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leçon 2 — Le fichier de ressources .pyxres | Formation Pyxel</title>
+  <meta name="description" content="Afficher des images, une tilemap et jouer des sons">
+  <link rel="stylesheet" href="../styles/article.css">
+</head>
+<body>
+  <article class="lesson">
+    <header class="lesson-header">
+      <p class="lesson-label">Formation Pyxel · Leçon 2</p>
+      <h1>Le fichier de ressources .pyxres</h1>
+      <p class="lesson-subtitle">Afficher des images, une tilemap et jouer des sons</p>
+    </header>
+
+    <nav class="lesson-toc" aria-label="Sommaire">
+      <p class="lesson-toc-title">Sommaire</p>
+      <ol>
+      <li><a href="#presentation">Présentation</a></li>
+      <li><a href="#objectifs">Objectifs</a></li>
+      <li><a href="#la-taille-de-la-fenetre-a-la-nuit-du-code">La taille de la fenêtre à la Nuit du Code</a></li>
+      <li><a href="#le-fichier-de-ressources">Le fichier de ressources</a></li>
+      <li><a href="#charger-les-ressources">Charger les ressources</a></li>
+      <li><a href="#afficher-une-image-avec-pyxel-blt">Afficher une image avec <code>pyxel.blt()</code></a></li>
+      <li><a href="#dessiner-la-tilemap-avec-pyxel-bltm">Dessiner la tilemap avec <code>pyxel.bltm()</code></a></li>
+      <li><a href="#jouer-un-son-et-une-musique">Jouer un son et une musique</a></li>
+      <li><a href="#le-code-complet">Le code complet</a></li>
+      <li><a href="#verifier-le-resultat">Vérifier le résultat</a></li>
+      <li><a href="#erreurs-frequentes">Erreurs fréquentes</a></li>
+      <li><a href="#experimentations">Expérimentations</a></li>
+      <li><a href="#a-retenir">À retenir</a></li>
+      </ol>
+    </nav>
+
+<h2 id="presentation">Présentation</h2>
+<p>La leçon 1 utilisait uniquement des formes géométriques. Cette leçon introduit les ressources graphiques et sonores du jeu.</p>
+<p>Le programme charge un fichier <code>res.pyxres</code> placé à côté de <code>main.py</code>. Ce fichier contient :</p>
+<ul>
+  <li>les images du joueur et des éléments du décor ;</li>
+  <li>une tilemap décrivant le niveau ;</li>
+  <li>des bruitages ;</li>
+  <li>une musique.</li>
+</ul>
+<p>Le joueur reste représenté par un objet <code>Player</code>, mais il est maintenant dessiné avec une image extraite du fichier de ressources. Le niveau est dessiné avec <code>pyxel.bltm()</code>. Un bruitage est joué à chaque rebond et une musique accompagne la scène.</p>
+<aside class="callout callout-note">
+<p class="callout-title">Deux fichiers, un seul programme</p>
+<p>Le projet contient désormais deux fichiers :</p>
+<pre><code class="language-text">main.py
+res.pyxres</code></pre>
+<p>Le code Python reste entièrement contenu dans <code>main.py</code>. Le fichier <code>.pyxres</code> ne contient pas de code : il ne contient que des données.</p>
+<p>Les deux fichiers doivent rester dans le même dossier.</p>
+</aside>
+<h2 id="objectifs">Objectifs</h2>
+<p>À la fin de la leçon, vous devez pouvoir :</p>
+<ol>
+  <li>expliquer à quoi sert un fichier <code>.pyxres</code> ;</li>
+  <li>charger les ressources avec <code>pyxel.load()</code> ;</li>
+  <li>afficher une image avec <code>pyxel.blt()</code> ;</li>
+  <li>dessiner une tilemap avec <code>pyxel.bltm()</code> ;</li>
+  <li>jouer un bruitage avec <code>pyxel.play()</code> ;</li>
+  <li>jouer une musique avec <code>pyxel.playm()</code> ;</li>
+  <li>utiliser la couleur transparente d'un sprite.</li>
+</ol>
+<h2 id="la-taille-de-la-fenetre-a-la-nuit-du-code">La taille de la fenêtre à la Nuit du Code</h2>
+<p>Le règlement de la Nuit du Code impose une fenêtre de jeu de 128 × 128 pixels ou de 256 × 256 pixels.</p>
+<p>La formation retient <strong>256 × 256 pixels</strong>.</p>
+<p>Ce choix présente trois avantages :</p>
+<ul>
+  <li>le décor laisse de la place à plusieurs plateformes et à une progression verticale ;</li>
+  <li>un niveau de 32 × 32 tuiles remplit exactement l'écran ;</li>
+  <li>les sprites de 8 × 8 pixels restent petits par rapport à la fenêtre, ce qui donne un rendu lisible et une impression d'espace.</li>
+</ul>
+<aside class="callout callout-important">
+<p class="callout-title">Constante à ne pas modifier</p>
+<pre><code class="language-python">SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256</code></pre>
+<p>Ces deux constantes sont fixées pour toute la formation. Elles correspondent à l'une des deux tailles autorisées.</p>
+</aside>
+<p>La variante 128 × 128 est également conforme au règlement. Elle ne change pas le principe du programme, mais elle modifie plusieurs valeurs :</p>
+<ul>
+  <li><code>SCREEN_WIDTH</code> et <code>SCREEN_HEIGHT</code> passent à 128 ;</li>
+  <li>un écran affiche alors 16 × 16 tuiles au lieu de 32 × 32 ;</li>
+  <li>les positions du décor et du joueur doivent être revues ;</li>
+  <li>le niveau de référence devrait être redessiné ou parcouru avec une caméra plus tôt.</li>
+</ul>
+<p>La formation conserve 256 × 256 pour laisser place au niveau complet sans caméra jusqu'à la leçon qui l'introduit.</p>
+<h2 id="le-fichier-de-ressources">Le fichier de ressources</h2>
+<h3>Rôle du fichier</h3>
+<p>Un fichier <code>.pyxres</code> regroupe les données d'un projet Pyxel :</p>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Contenu</th><th>Rôle</th><th>Utilisation dans le code</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Banques d'images</td><td>Dessins en pixels</td><td><code>pyxel.blt()</code></td></tr>
+      <tr><td>Tilemaps</td><td>Assemblage de tuiles</td><td><code>pyxel.bltm()</code></td></tr>
+      <tr><td>Sons</td><td>Bruitages courts</td><td><code>pyxel.play()</code></td></tr>
+      <tr><td>Musiques</td><td>Suites de sons</td><td><code>pyxel.playm()</code></td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Le programme ne connaît pas le contenu du fichier. Il indique simplement quelle zone lire :</p>
+<ul>
+  <li>une image est désignée par des coordonnées en pixels dans une banque ;</li>
+  <li>une tuile de tilemap est désignée par des coordonnées de tuiles ;</li>
+  <li>un son est désigné par son numéro ;</li>
+  <li>une musique est désignée par son numéro.</li>
+</ul>
+<aside class="callout callout-note">
+<p class="callout-title">Format technique</p>
+<p>Un fichier <code>.pyxres</code> est une archive ZIP qui contient un unique fichier texte au format TOML. Les images y sont décrites pixel par pixel sous forme de valeurs de la palette Pyxel.</p>
+<p>Ce détail n'est pas nécessaire pour utiliser les ressources. Il explique seulement pourquoi le fichier n'est pas lisible directement dans un éditeur de texte.</p>
+</aside>
+<h3>Récupérer le fichier de la formation</h3>
+<p>Le fichier <code>res.pyxres</code> de cette leçon est fourni avec le cours. Il doit être placé dans le même dossier que <code>main.py</code>.</p>
+<aside class="callout callout-tip">
+<p class="callout-title">Import dans PyxelStudio</p>
+<p>Selon la version de PyxelStudio, un fichier de ressources peut être importé dans le projet, puis ouvert dans l'éditeur de ressources.</p>
+<p>Si l'import de fichier n'est pas disponible, il est possible de reconstruire les ressources dans l'éditeur intégré en suivant les indications des sections suivantes. Le code Python, lui, ne change pas.</p>
+</aside>
+<h3>Contenu du fichier fourni</h3>
+<h4>Banque d'images 0</h4>
+<p>Chaque tuile occupe une zone de 8 × 8 pixels. Les coordonnées ci-dessous sont exprimées en tuiles, pas en pixels.</p>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Position</th><th>Contenu</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>(0, 0)</td><td>Joueur au repos, image 0</td></tr>
+      <tr><td>(1, 0)</td><td>Joueur au repos, image 1</td></tr>
+      <tr><td>(2, 0)</td><td>Joueur en marche, image 0</td></tr>
+      <tr><td>(3, 0)</td><td>Joueur en marche, image 1</td></tr>
+      <tr><td>(0, 1)</td><td>Sol, tuile du dessus</td></tr>
+      <tr><td>(1, 1)</td><td>Sol, tuile de remplissage</td></tr>
+      <tr><td>(2, 1)</td><td>Plateforme</td></tr>
+      <tr><td>(3, 1)</td><td>Pièce</td></tr>
+      <tr><td>(4, 1)</td><td>Buisson</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Les quatre images du joueur ne sont pas encore utilisées dans cette leçon. Elles serviront à l'animation.</p>
+<h4>Tilemap 0</h4>
+<p>La tilemap décrit un niveau de 32 × 32 tuiles, soit 256 × 256 pixels.</p>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Élément</th><th>Position en tuiles</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Sol, ligne du dessus</td><td>Ligne 28, toutes les colonnes</td></tr>
+      <tr><td>Sol, remplissage</td><td>Lignes 29 à 31</td></tr>
+      <tr><td>Plateforme basse</td><td>Ligne 23, colonnes 4 à 10</td></tr>
+      <tr><td>Plateforme intermédiaire</td><td>Ligne 19, colonnes 13 à 20</td></tr>
+      <tr><td>Plateforme haute</td><td>Ligne 15, colonnes 23 à 29</td></tr>
+      <tr><td>Pièces</td><td>Ligne 22, colonnes 5, 7 et 9 ; ligne 18, colonnes 14, 16 et 18 ; ligne 14, colonnes 24, 26 et 28</td></tr>
+      <tr><td>Buissons</td><td>Ligne 27, colonnes 3, 20 et 30</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>La ligne de sol commence à la tuile 28. Son bord supérieur se trouve donc à la coordonnée <code>28 × 8 = 224</code> pixels.</p>
+<p>C'est pourquoi le joueur commence à la position verticale 216 : sa hauteur est de 8 pixels et <code>216 + 8 = 224</code>.</p>
+<h4>Sons et musiques</h4>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Numéro</th><th>Contenu</th><th>Usage prévu</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Son 0</td><td>Saut</td><td>Déplacement vertical</td></tr>
+      <tr><td>Son 1</td><td>Pièce</td><td>Rebond du joueur</td></tr>
+      <tr><td>Son 2</td><td>Collision</td><td>Contact avec un élément dangereux</td></tr>
+      <tr><td>Sons 8 à 11</td><td>Mélodie</td><td>Musique 0, canal 0</td></tr>
+      <tr><td>Sons 12 et 13</td><td>Accompagnement</td><td>Musique 0, canal 1</td></tr>
+      <tr><td>Musique 0</td><td>Thème du niveau</td><td>Musique de fond</td></tr>
+    </tbody>
+  </table>
+</div>
+<h2 id="charger-les-ressources">Charger les ressources</h2>
+<p>Le chargement se fait une seule fois, au démarrage, avant toute utilisation :</p>
+<pre><code class="language-python">pyxel.load(RESOURCE_FILE)</code></pre>
+<p>avec :</p>
+<pre><code class="language-python">RESOURCE_FILE = "res.pyxres"</code></pre>
+<aside class="callout callout-warning">
+<p class="callout-title">Emplacement du fichier</p>
+<p>Si le fichier n'est pas dans le même dossier que <code>main.py</code>, Pyxel affiche une erreur du type :</p>
+<pre><code class="language-text">Failed to open file 'res.pyxres'</code></pre>
+<p>Il faut alors vérifier le nom du fichier et son emplacement.</p>
+</aside>
+<p>Le chargement doit être placé après <code>pyxel.init()</code> et avant <code>pyxel.run()</code>.</p>
+<h2 id="afficher-une-image-avec-pyxel-blt">Afficher une image avec <code>pyxel.blt()</code></h2>
+<h3>Principe</h3>
+<p><code>pyxel.blt()</code> copie une zone rectangulaire d'une banque d'images vers l'écran.</p>
+<pre><code class="language-python">pyxel.blt(x, y, img, u, v, w, h, colkey)</code></pre>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Paramètre</th><th>Rôle</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>x</code>, <code>y</code></td><td>Position à l'écran, en pixels</td></tr>
+      <tr><td><code>img</code></td><td>Numéro de la banque d'images</td></tr>
+      <tr><td><code>u</code>, <code>v</code></td><td>Position de la zone dans la banque, en pixels</td></tr>
+      <tr><td><code>w</code>, <code>h</code></td><td>Largeur et hauteur de la zone, en pixels</td></tr>
+      <tr><td><code>colkey</code></td><td>Couleur considérée comme transparente</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>La distinction entre <code>x</code>, <code>y</code> et <code>u</code>, <code>v</code> est importante :</p>
+<ul>
+  <li><code>x</code> et <code>y</code> indiquent où dessiner sur l'écran ;</li>
+  <li><code>u</code> et <code>v</code> indiquent quoi dessiner dans la banque d'images.</li>
+</ul>
+<h3>Dessiner le joueur</h3>
+<pre><code class="language-python">def draw(self):
+    pyxel.blt(
+        self.x,
+        self.y,
+        0,
+        PLAYER_TILE_X * TILE_SIZE,
+        PLAYER_TILE_Y * TILE_SIZE,
+        self.width,
+        self.height,
+        TRANSPARENT_COLOR,
+    )</code></pre>
+<p>Avec :</p>
+<pre><code class="language-python">PLAYER_TILE_X = 0
+PLAYER_TILE_Y = 0
+TILE_SIZE = 8</code></pre>
+<p>La position dans la banque est calculée à partir de coordonnées de tuiles. La tuile (0, 0) correspond aux pixels (0, 0) de la banque.</p>
+<p>Pour utiliser la tuile (2, 0), il suffit de modifier la constante :</p>
+<pre><code class="language-python">PLAYER_TILE_X = 2</code></pre>
+<h3>La couleur transparente</h3>
+<p>Un sprite est un petit rectangle qui contient un dessin, mais aussi des pixels inutiles autour du dessin.</p>
+<p>Dans le fichier fourni, ces pixels utilisent la couleur 0 de la palette, le noir. Cette couleur est déclarée transparente :</p>
+<pre><code class="language-python">TRANSPARENT_COLOR = 0</code></pre>
+<p>Sans cette indication, le sprite serait dessiné avec un rectangle noir autour du personnage.</p>
+<aside class="callout callout-tip">
+<p class="callout-title">Pourquoi éviter le noir dans le dessin</p>
+<p>Si la couleur 0 sert de couleur transparente, aucun élément du sprite ne doit l'utiliser.</p>
+<p>Les dessins de la formation utilisent donc le bleu nuit pour les contours et réservent le noir à la transparence.</p>
+</aside>
+<h2 id="dessiner-la-tilemap-avec-pyxel-bltm">Dessiner la tilemap avec <code>pyxel.bltm()</code></h2>
+<h3>Principe</h3>
+<p>Une tilemap est une grille de références vers des tuiles de 8 × 8 pixels. Chaque case ne contient pas un dessin : elle contient les coordonnées d'une tuile dans la banque d'images.</p>
+<p><code>pyxel.bltm()</code> copie une zone de tilemap vers l'écran.</p>
+<pre><code class="language-python">pyxel.bltm(x, y, tm, u, v, w, h)</code></pre>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Paramètre</th><th>Rôle</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>x</code>, <code>y</code></td><td>Position à l'écran, en pixels</td></tr>
+      <tr><td><code>tm</code></td><td>Numéro de la tilemap</td></tr>
+      <tr><td><code>u</code>, <code>v</code></td><td>Position dans la tilemap, en pixels</td></tr>
+      <tr><td><code>w</code>, <code>h</code></td><td>Largeur et hauteur de la zone, en pixels</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Comme pour <code>blt()</code>, les coordonnées <code>u</code> et <code>v</code> sont exprimées en pixels, même si la tilemap est organisée en tuiles.</p>
+<h3>La classe <code>Level</code></h3>
+<pre><code class="language-python">class Level:
+    def __init__(self):
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            0,
+            0,
+            0,
+            self.width,
+            self.height,
+        )</code></pre>
+<p>Avec :</p>
+<pre><code class="language-python">LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32</code></pre>
+<p>La classe <code>Level</code> respecte la même organisation que <code>Player</code> :</p>
+<ul>
+  <li><code>__init__()</code> prépare les dimensions ;</li>
+  <li><code>draw()</code> affiche l'élément.</li>
+</ul>
+<p>Le niveau n'a pas encore de méthode <code>update()</code>, car il est immobile. Une méthode sera ajoutée lorsque le défilement du décor sera étudié.</p>
+<aside class="callout callout-note">
+<p class="callout-title">Une case vide</p>
+<p>Une case vide d'une tilemap contient les coordonnées d'une zone transparente de la banque d'images. Dans le fichier fourni, il s'agit de la tuile (5, 5).</p>
+<p>Si une case vide référence par erreur la tuile (0, 0), le dessin du joueur apparaît répété sur tout le niveau.</p>
+</aside>
+<h2 id="jouer-un-son-et-une-musique">Jouer un son et une musique</h2>
+<h3>Un bruitage</h3>
+<pre><code class="language-python">pyxel.play(ch, snd)</code></pre>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Paramètre</th><th>Rôle</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>ch</code></td><td>Numéro du canal, de 0 à 3</td></tr>
+      <tr><td><code>snd</code></td><td>Numéro du son</td></tr>
+    </tbody>
+  </table>
+</div>
+<p>Dans cette leçon, le bruitage numéro 1 est joué à chaque rebond :</p>
+<pre><code class="language-python">pyxel.play(0, BOUNCE_SOUND)</code></pre>
+<p>avec :</p>
+<pre><code class="language-python">BOUNCE_SOUND = 1</code></pre>
+<p>Le canal 0 est utilisé. Les canaux permettent de jouer plusieurs sons en même temps ; ils seront réutilisés pour les sauts et les collisions.</p>
+<h3>Détecter un rebond</h3>
+<p>Le joueur change de sens lorsqu'il atteint un bord. La classe <code>Game</code> compare la direction avant et après la mise à jour :</p>
+<pre><code class="language-python">def update(self):
+    if pyxel.btnp(pyxel.KEY_Q):
+        pyxel.quit()
+
+    direction = self.player.dx
+    self.player.update()
+
+    if self.player.dx != direction:
+        pyxel.play(0, BOUNCE_SOUND)</code></pre>
+<p>Cette détection reste volontairement simple. Elle ne décrit pas une règle de jeu, seulement un événement visuel : le joueur vient de changer de direction.</p>
+<h3>Une musique</h3>
+<pre><code class="language-python">pyxel.playm(MUSIC, loop=True)</code></pre>
+<p>avec :</p>
+<pre><code class="language-python">MUSIC = 0</code></pre>
+<p>La musique 0 est lancée au démarrage et rejouée en boucle. Elle utilise deux canaux : une mélodie et un accompagnement.</p>
+<p>Pour arrêter la musique :</p>
+<pre><code class="language-python">pyxel.stop()</code></pre>
+<aside class="callout callout-warning">
+<p class="callout-title">Charger avant de jouer</p>
+<p>Un son ou une musique ne peut pas être joué avant le chargement des ressources.</p>
+<p>L'ordre correct est :</p>
+<ol>
+  <li><code>pyxel.init()</code> ;</li>
+  <li><code>pyxel.load()</code> ;</li>
+  <li><code>pyxel.playm()</code> ;</li>
+  <li><code>pyxel.run()</code>.</li>
+</ol>
+</aside>
+<h2 id="le-code-complet">Le code complet</h2>
+<pre><code class="language-python">import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 1
+PLAYER_TILE_X = 0
+PLAYER_TILE_Y = 0
+PLAYER_START_X = 40
+PLAYER_START_Y = 216
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+BOUNCE_SOUND = 1
+MUSIC = 0
+
+
+class Level:
+    def __init__(self):
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            0,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
+
+class Player:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = PLAYER_SPEED
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x &lt;= 0:
+            self.x = 0
+            self.dx = abs(self.dx)
+        elif self.x + self.width &gt;= pyxel.width:
+            self.x = pyxel.width - self.width
+            self.dx = -abs(self.dx)
+
+    def draw(self):
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            PLAYER_TILE_X * TILE_SIZE,
+            PLAYER_TILE_Y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Leçon 2 - ressources",
+        )
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+        )
+
+        pyxel.playm(MUSIC, loop=True)
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        direction = self.player.dx
+        self.player.update()
+
+        if self.player.dx != direction:
+            pyxel.play(0, BOUNCE_SOUND)
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+        self.level.draw()
+
+        pyxel.text(
+            4,
+            4,
+            "Leçon 2 - ressources",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            "Images, tilemap et audio",
+            TEXT_COLOR,
+        )
+
+        self.player.draw()
+
+
+Game()</code></pre>
+<p>Le résultat attendu est le suivant :</p>
+<ul>
+  <li>une fenêtre de 256 × 256 pixels ;</li>
+  <li>le niveau dessiné avec ses plateformes, ses pièces et son sol ;</li>
+  <li>le sprite du joueur à la place du rectangle ;</li>
+  <li>un bruitage à chaque rebond ;</li>
+  <li>une musique de fond en boucle ;</li>
+  <li>la touche <code>Q</code> qui ferme l'application.</li>
+</ul>
+<h2 id="verifier-le-resultat">Vérifier le résultat</h2>
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr><th>Point à vérifier</th><th>Résultat attendu</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Fond</td><td>Bleu sombre</td></tr>
+      <tr><td>Sol</td><td>Bande verte puis marron, à partir de la ligne 28</td></tr>
+      <tr><td>Plateformes</td><td>Trois blocs orange étagés</td></tr>
+      <tr><td>Pièces</td><td>Trois pièces au-dessus de chaque plateforme, soit neuf pièces</td></tr>
+      <tr><td>Joueur</td><td>Petit personnage rouge et pêche</td></tr>
+      <tr><td>Déplacement</td><td>Horizontal, avec rebond sur les bords</td></tr>
+      <tr><td>Bruitage</td><td>Joué à chaque rebond</td></tr>
+      <tr><td>Musique</td><td>Audible en boucle</td></tr>
+      <tr><td>Touche <code>Q</code></td><td>Ferme l'application</td></tr>
+    </tbody>
+  </table>
+</div>
+<h2 id="erreurs-frequentes">Erreurs fréquentes</h2>
+<aside class="callout callout-warning">
+<p class="callout-title"><code>Failed to open file 'res.pyxres'</code></p>
+<p>Le fichier n'est pas trouvé. Vérifiez :</p>
+<ul>
+  <li>son nom exact ;</li>
+  <li>sa présence dans le même dossier que <code>main.py</code> ;</li>
+  <li>l'absence d'une double extension du type <code>res.pyxres.txt</code>.</li>
+</ul>
+</aside>
+<aside class="callout callout-warning">
+<p class="callout-title">Un rectangle noir entoure le joueur</p>
+<p>La couleur transparente n'est pas indiquée. Vérifiez le dernier argument de <code>pyxel.blt()</code> :</p>
+<pre><code class="language-python">TRANSPARENT_COLOR,</code></pre>
+</aside>
+<aside class="callout callout-warning">
+<p class="callout-title">Le joueur apparaît partout dans le niveau</p>
+<p>Les cases vides de la tilemap référencent une tuile dessinée. Il faut corriger la tilemap dans l'éditeur de ressources et placer une tuile transparente dans les cases vides.</p>
+</aside>
+<aside class="callout callout-warning">
+<p class="callout-title">Aucun son n'est entendu</p>
+<p>Plusieurs causes sont possibles :</p>
+<ul>
+  <li><code>pyxel.load()</code> a été oublié ;</li>
+  <li>le numéro de son est erroné ;</li>
+  <li>le son a été joué avant le chargement des ressources ;</li>
+  <li>le volume de l'environnement est coupé.</li>
+</ul>
+</aside>
+<aside class="callout callout-note">
+<p class="callout-title">Le décor ne s'affiche pas</p>
+<p>Vérifiez l'ordre des arguments de <code>pyxel.bltm()</code> : la position à l'écran vient d'abord, le numéro de tilemap ensuite.</p>
+<pre><code class="language-python">pyxel.bltm(x, y, tm, u, v, w, h)</code></pre>
+</aside>
+<h2 id="experimentations">Expérimentations</h2>
+<p>Ces modifications sont facultatives.</p>
+<h3>Utiliser une autre image du joueur</h3>
+<p>Remplacez :</p>
+<pre><code class="language-python">PLAYER_TILE_X = 0</code></pre>
+<p>par :</p>
+<pre><code class="language-python">PLAYER_TILE_X = 2</code></pre>
+<p>Le joueur utilise alors une image de marche.</p>
+<h3>Afficher une pièce isolée</h3>
+<p>Ajoutez dans <code>Game.draw()</code>, avant <code>self.player.draw()</code> :</p>
+<pre><code class="language-python">pyxel.blt(
+    64,
+    40,
+    0,
+    3 * TILE_SIZE,
+    1 * TILE_SIZE,
+    8,
+    8,
+    TRANSPARENT_COLOR,
+)</code></pre>
+<p>La tuile (3, 1) de la banque 0 apparaît à la position (64, 40) de l'écran.</p>
+<h3>Changer le bruitage</h3>
+<p>Remplacez :</p>
+<pre><code class="language-python">BOUNCE_SOUND = 1</code></pre>
+<p>par :</p>
+<pre><code class="language-python">BOUNCE_SOUND = 0</code></pre>
+<p>Le rebond utilise alors le son du saut.</p>
+<h3>Changer la musique</h3>
+<p>Ajoutez plusieurs musiques dans l'éditeur de ressources, puis modifiez :</p>
+<pre><code class="language-python">MUSIC = 0</code></pre>
+<h3>Modifier le niveau</h3>
+<p>Dans l'éditeur de tilemap, déplacez les plateformes ou ajoutez des pièces. Le code Python ne change pas : le niveau est entièrement décrit par la tilemap.</p>
+<aside class="callout callout-tip">
+<p class="callout-title">Un niveau sans modification du code</p>
+<p>Cette propriété est importante pour la suite : le décor peut être retravaillé dans l'éditeur sans toucher au programme. Seules les positions logiques, comme le point de départ du joueur, doivent rester cohérentes avec le dessin.</p>
+</aside>
+<h2 id="a-retenir">À retenir</h2>
+<ul>
+  <li>La fenêtre de jeu mesure 256 × 256 pixels, l'une des deux tailles autorisées par la Nuit du Code.</li>
+  <li>Un fichier <code>.pyxres</code> contient les images, les tilemaps, les sons et les musiques.</li>
+  <li><code>pyxel.load()</code> charge les ressources et doit être appelé avant leur utilisation.</li>
+  <li><code>pyxel.blt()</code> affiche une zone d'une banque d'images.</li>
+  <li><code>pyxel.bltm()</code> affiche une zone d'une tilemap.</li>
+  <li><code>colkey</code> rend une couleur transparente : ici la couleur 0.</li>
+  <li><code>pyxel.play()</code> joue un bruitage sur un canal.</li>
+  <li><code>pyxel.playm()</code> joue une musique.</li>
+  <li>Le décor est décrit dans la tilemap, pas dans le code Python.</li>
+</ul>
+<p>Dans la prochaine leçon, le déplacement automatique est remplacé par les contrôles du clavier. La classe <code>Player</code> recevra une méthode <code>update()</code> qui lit les touches gauche et droite.</p>
+
+  </article>
+</body>
+</html>
