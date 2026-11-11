@@ -1149,7 +1149,8 @@ Règles appliquées :
 - `article.html` contient l'article en HTML, avec une feuille de style commune `styles/article.css` ;
 - `script-video.md` contient le script de la vidéo ;
 - le fichier de ressources de référence est généré dans `outils/`, puis copié dans le dossier de la leçon ;
-- les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante.
+- les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante ;
+- les consignes de production, les conventions de code et les vérifications à exécuter sont décrites dans `cours/AGENTS.md`.
 
 ---
 
