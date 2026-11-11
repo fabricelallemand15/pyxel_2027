@@ -60,7 +60,7 @@ Le fichier `res.pyxres` contient les ressources du jeu :
 Le programme chargera la ressource après l'initialisation de Pyxel :
 
 ```python
-pyxel.init(128, 128, title="Mon platformer")
+pyxel.init(256, 256, title="Mon platformer")
 pyxel.load("res.pyxres")
 ```
 
@@ -68,13 +68,13 @@ Le nom `res.pyxres` est la convention de référence du cours. Si l'interface Ca
 
 Le règlement de la Nuit du Code impose par ailleurs une fenêtre de jeu de 128 × 128 ou de 256 × 256 pixels.
 
-La formation retient **128 × 128 pixels** :
+La formation retient **256 × 256 pixels** :
 
-- le niveau de référence occupe 16 × 16 tuiles et remplit exactement l'écran ;
-- la caméra devient réellement utile lorsqu'un niveau plus large que l'écran est construit ;
-- les ressources restent petites et rapides à dessiner.
+- le niveau de référence occupe 32 × 32 tuiles et remplit exactement l'écran ;
+- le décor peut comporter plusieurs plateformes étagées sans être à l'étroit ;
+- les sprites de 8 × 8 pixels restent petits par rapport à la fenêtre, ce qui donne un rendu lisible.
 
-La variante 256 × 256 est mentionnée dans les leçons comme une alternative conforme au règlement. Elle ne change que les dimensions de l'écran et le nombre de tuiles visibles.
+La variante 128 × 128 est mentionnée dans les leçons comme une alternative conforme au règlement. Elle change les dimensions de l'écran, le nombre de tuiles visibles et les positions du décor.
 
 ### 2.2. POO simplifiée
 
@@ -235,12 +235,12 @@ Contenu livré avec la leçon 2 :
 
 #### Tilemap 0
 
-Niveau de 16 × 16 tuiles, soit 128 × 128 pixels :
+Niveau de 32 × 32 tuiles, soit 256 × 256 pixels :
 
-- sol à partir de la ligne 12 ;
-- deux plateformes ;
-- six pièces ;
-- une case décorative.
+- sol à partir de la ligne 28 ;
+- trois plateformes étagées aux lignes 23, 19 et 15 ;
+- neuf pièces, trois par plateforme ;
+- trois buissons décoratifs sur le sol.
 
 #### Sons
 
@@ -319,7 +319,7 @@ class Enemy:
 
 class Game:
     def __init__(self):
-        pyxel.init(128, 128, title="Mon platformer")
+        pyxel.init(256, 256, title="Mon platformer")
         pyxel.load("res.pyxres")
         ...
         pyxel.run(self.update, self.draw)

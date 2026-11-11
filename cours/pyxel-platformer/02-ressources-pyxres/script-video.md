@@ -57,21 +57,21 @@ La leçon conserve la structure en classes de la leçon 1. Deux classes sont ajo
 import pyxel
 
 
-SCREEN_WIDTH = 128
-SCREEN_HEIGHT = 128
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
 RESOURCE_FILE = "res.pyxres"
 
 TILE_SIZE = 8
-LEVEL_WIDTH = 16
-LEVEL_HEIGHT = 16
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
 
 PLAYER_WIDTH = 8
 PLAYER_HEIGHT = 8
 PLAYER_SPEED = 1
 PLAYER_TILE_X = 0
 PLAYER_TILE_Y = 0
-PLAYER_START_X = 16
-PLAYER_START_Y = 88
+PLAYER_START_X = 40
+PLAYER_START_Y = 216
 
 BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
 TEXT_COLOR = pyxel.COLOR_WHITE
@@ -184,7 +184,7 @@ Game()
 
 ### 00:00 — Montrer le résultat
 
-**À l’écran :** lancer le jeu terminé. Le niveau apparaît avec un sol vert et marron, deux plateformes, six pièces et un personnage. La musique démarre. Le personnage se déplace et le bruitage se déclenche à chaque rebond.
+**À l’écran :** lancer le jeu terminé. Le niveau apparaît avec un sol vert et marron, trois plateformes, neuf pièces et un personnage. La musique démarre. Le personnage se déplace et le bruitage se déclenche à chaque rebond.
 
 **Narration :**
 
@@ -203,24 +203,24 @@ Game()
 ```text
 Nuit du Code : fenêtre de 128 x 128 ou 256 x 256
 
-Formation : 128 x 128
+Formation : 256 x 256
 ```
 
 **Narration :**
 
 > Le règlement de la Nuit du Code impose une fenêtre de jeu de 128 pixels sur 128, ou de 256 pixels sur 256.
 >
-> La formation utilise 128 sur 128.
+> La formation utilise 256 sur 256.
 >
-> Cette taille présente plusieurs avantages. Le niveau complet tient dans la fenêtre : 16 tuiles de 8 pixels, soit 128 pixels de large. La caméra, étudiée plus tard, sera donc réellement utile pour parcourir un niveau plus grand.
+> Cette taille laisse de la place au décor : 32 tuiles de 8 pixels, soit 256 pixels de large. Le niveau peut comporter plusieurs plateformes étagées sans devenir à l’étroit.
 >
-> La variante 256 sur 256 reste conforme au règlement. Elle modifie seulement les dimensions de l’écran et le nombre de tuiles visibles.
+> La variante 128 sur 128 reste conforme au règlement. Elle modifie les dimensions de l’écran, le nombre de tuiles visibles et les positions du décor.
 
 **À l’écran :** mettre en évidence les constantes :
 
 ```python
-SCREEN_WIDTH = 128
-SCREEN_HEIGHT = 128
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
 ```
 
 **Narration :**
@@ -306,15 +306,15 @@ musiques  -> pyxel.playm()
 
 > Une tilemap est une grille de références. Chaque case ne contient pas un dessin : elle contient la position d’une tuile dans la banque d’images.
 >
-> La tilemap 0 décrit notre niveau. Elle utilise 16 cases de large sur 16 cases de haut, soit 128 pixels sur 128.
+> La tilemap 0 décrit notre niveau. Elle utilise 32 cases de large sur 32 cases de haut, soit 256 pixels sur 256.
 >
-> La ligne 12 contient le dessus du sol. Les lignes suivantes contiennent le remplissage. Le joueur se déplace à la surface, juste au-dessus de la ligne 12.
+> La ligne 28 contient le dessus du sol. Les lignes suivantes contiennent le remplissage. Le joueur se déplace à la surface, juste au-dessus de la ligne 28.
 
 **Action :** survoler les plateformes, les pièces et le buisson.
 
 **Narration :**
 
-> Les plateformes occupent les lignes 9 et 7. Les pièces occupent les lignes 8 et 6, juste au-dessus. Le buisson décore le bord droit.
+> Les plateformes occupent les lignes 23, 19 et 15 : elles montent vers la droite. Les pièces se trouvent juste au-dessus, sur les lignes 22, 18 et 14. Trois buissons décorent le sol.
 >
 > Les autres cases sont vides. Une case vide référence une zone transparente de la banque d’images, ici la tuile située en bas à droite de la zone utilisée.
 >
@@ -469,7 +469,7 @@ class Level:
 >
 > `pyxel.bltm()` copie une zone de tilemap vers l’écran. Les arguments sont comparables à ceux de `blt()` : position à l’écran, numéro de tilemap, position dans la tilemap, puis largeur et hauteur.
 >
-> Le niveau étant aussi grand que l’écran, la position et la taille couvrent 128 pixels.
+> Le niveau étant aussi grand que l’écran, la position et la taille couvrent 256 pixels.
 
 **À l’écran :** créer le niveau dans `Game.__init__()` :
 
@@ -592,7 +592,7 @@ aucun son                         -> ressources non chargées ou mauvais numéro
 ## Vérification avant publication
 
 - Le jeu s’exécute avec Pyxel 3.0.1.
-- La fenêtre mesure 128 × 128 pixels.
+- La fenêtre mesure 256 × 256 pixels.
 - Le fichier `res.pyxres` est bien détecté depuis le dossier de `main.py`.
 - Le sprite du joueur est dessiné sans rectangle noir.
 - La tilemap affiche uniquement le décor prévu.

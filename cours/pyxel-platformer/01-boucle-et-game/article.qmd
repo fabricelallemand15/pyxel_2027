@@ -73,9 +73,9 @@ Copiez le code suivant dans `main.py`, puis exécutez-le dans PyxelStudio.
 import pyxel
 
 
-SCREEN_WIDTH = 128
-SCREEN_HEIGHT = 128
-GROUND_Y = 96
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+GROUND_Y = 224
 
 PLAYER_WIDTH = 8
 PLAYER_HEIGHT = 8
@@ -166,7 +166,7 @@ Game()
 
 Le résultat attendu est le suivant :
 
-- une fenêtre de 128 × 128 pixels ;
+- une fenêtre de 256 × 256 pixels ;
 - un fond bleu foncé ;
 - un sol vert ;
 - un carré jaune qui se déplace ;
@@ -193,21 +193,21 @@ Cette instruction importe le module Pyxel. Elle donne accès aux fonctions utili
 ## Définir des constantes
 
 ```python
-SCREEN_WIDTH = 128
-SCREEN_HEIGHT = 128
-GROUND_Y = 96
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+GROUND_Y = 224
 ```
 
 Ces constantes décrivent la configuration générale du jeu.
 
-`SCREEN_WIDTH` et `SCREEN_HEIGHT` valent 128. Cette valeur correspond à l'une des deux tailles de fenêtre autorisées à la Nuit du Code :
+`SCREEN_WIDTH` et `SCREEN_HEIGHT` valent 256. Cette valeur correspond à l'une des deux tailles de fenêtre autorisées à la Nuit du Code :
 
 ```text
 128 × 128 pixels
 256 × 256 pixels
 ```
 
-La formation conserve 128 × 128 pour toute sa durée. La leçon 2 détaille ce choix et présente la variante 256 × 256.
+La formation conserve 256 × 256 pour toute sa durée. La leçon 2 détaille ce choix et présente la variante 128 × 128.
 
 `GROUND_Y` est la coordonnée verticale du haut du sol. Dans Pyxel, l'origine du repère est située en haut à gauche :
 
@@ -358,7 +358,7 @@ Elle est responsable de :
 - coordonner leur mise à jour ;
 - coordonner leur dessin.
 
-`pyxel.init()` initialise une fenêtre de 128 × 128 pixels et lui donne un titre.
+`pyxel.init()` initialise une fenêtre de 256 × 256 pixels et lui donne un titre.
 
 ## Créer le joueur
 
@@ -592,7 +592,7 @@ PLAYER_COLOR = pyxel.COLOR_RED
 Changez :
 
 ```python
-GROUND_Y = 96
+GROUND_Y = 224
 ```
 
 Observez pourquoi il faut également recalculer la position initiale du joueur.

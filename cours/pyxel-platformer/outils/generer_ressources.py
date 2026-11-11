@@ -178,10 +178,20 @@ TILE_BUSH = (4, 1)
 # Une case vide référence une zone transparente de la banque d'images.
 TILE_EMPTY = (5, 5)
 
-# La tilemap fait 16 x 16 tuiles, soit 128 x 128 pixels.
-LEVEL_WIDTH_TILES = 16
-LEVEL_HEIGHT_TILES = 16
-GROUND_ROW = 12
+# La tilemap fait 32 x 32 tuiles, soit 256 x 256 pixels.
+LEVEL_WIDTH_TILES = 32
+LEVEL_HEIGHT_TILES = 32
+GROUND_ROW = 28
+
+# Plateformes : (ligne, première colonne, dernière colonne).
+PLATFORMS = (
+    (23, 4, 10),
+    (19, 13, 20),
+    (15, 23, 29),
+)
+
+# Buissons posés sur le sol.
+BUSH_COLUMNS = (3, 20, 30)
 
 # Bruitages : notes -1 (silence) à 59 (si4).
 SOUNDS = {
@@ -249,17 +259,14 @@ def build_tilemap() -> list[list[tuple[int, int]]]:
         for y in range(GROUND_ROW + 1, LEVEL_HEIGHT_TILES):
             tiles[y][x] = TILE_GROUND_FILL
 
-    for x in range(2, 6):
-        tiles[9][x] = TILE_PLATFORM
-    for x in range(9, 14):
-        tiles[7][x] = TILE_PLATFORM
+    for row, first_column, last_column in PLATFORMS:
+        for x in range(first_column, last_column + 1):
+            tiles[row][x] = TILE_PLATFORM
+        for x in range(first_column + 1, last_column, 2):
+            tiles[row - 1][x] = TILE_COIN
 
-    for x in (3, 4, 5):
-        tiles[8][x] = TILE_COIN
-    for x in (10, 11, 12):
-        tiles[6][x] = TILE_COIN
-
-    tiles[GROUND_ROW - 1][15] = TILE_BUSH
+    for x in BUSH_COLUMNS:
+        tiles[GROUND_ROW - 1][x] = TILE_BUSH
 
     return tiles
 

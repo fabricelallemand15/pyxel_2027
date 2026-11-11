@@ -60,32 +60,33 @@ Les deux fichiers doivent rester dans le même dossier.
 
 Le règlement de la Nuit du Code impose une fenêtre de jeu de 128 × 128 pixels ou de 256 × 256 pixels.
 
-La formation retient **128 × 128 pixels**.
+La formation retient **256 × 256 pixels**.
 
 Ce choix présente trois avantages :
 
-- la fenêtre complète reste visible sur un écran de taille modeste ;
-- un niveau de 16 × 16 tuiles remplit exactement l'écran ;
-- la caméra, étudiée plus tard, devient réellement nécessaire pour parcourir un niveau plus grand que l'écran.
+- le décor laisse de la place à plusieurs plateformes et à une progression verticale ;
+- un niveau de 32 × 32 tuiles remplit exactement l'écran ;
+- les sprites de 8 × 8 pixels restent petits par rapport à la fenêtre, ce qui donne un rendu lisible et une impression d'espace.
 
 ::: {.callout-important}
 ## Constante à ne pas modifier
 
 ```python
-SCREEN_WIDTH = 128
-SCREEN_HEIGHT = 128
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
 ```
 
 Ces deux constantes sont fixées pour toute la formation. Elles correspondent à l'une des deux tailles autorisées.
 :::
 
-La variante 256 × 256 est également conforme au règlement. Elle ne change pas le principe du programme, mais elle modifie plusieurs valeurs :
+La variante 128 × 128 est également conforme au règlement. Elle ne change pas le principe du programme, mais elle modifie plusieurs valeurs :
 
-- `SCREEN_WIDTH` et `SCREEN_HEIGHT` passent à 256 ;
-- un écran affiche alors 32 × 32 tuiles au lieu de 16 × 16 ;
-- les positions du décor et du joueur doivent être revues.
+- `SCREEN_WIDTH` et `SCREEN_HEIGHT` passent à 128 ;
+- un écran affiche alors 16 × 16 tuiles au lieu de 32 × 32 ;
+- les positions du décor et du joueur doivent être revues ;
+- le niveau de référence devrait être redessiné ou parcouru avec une caméra plus tôt.
 
-La formation conserve 128 × 128 pour que le niveau tienne entièrement dans la fenêtre jusqu'à la leçon sur la caméra.
+La formation conserve 256 × 256 pour laisser place au niveau complet sans caméra jusqu'à la leçon qui l'introduit.
 
 # Le fichier de ressources
 
@@ -149,20 +150,21 @@ Les quatre images du joueur ne sont pas encore utilisées dans cette leçon. Ell
 
 ### Tilemap 0
 
-La tilemap décrit un niveau de 16 × 16 tuiles, soit 128 × 128 pixels.
+La tilemap décrit un niveau de 32 × 32 tuiles, soit 256 × 256 pixels.
 
 | Élément | Position en tuiles |
 | --- | --- |
-| Sol, ligne du dessus | Ligne 12, toutes les colonnes |
-| Sol, remplissage | Lignes 13 à 15 |
-| Plateforme basse | Ligne 9, colonnes 2 à 5 |
-| Plateforme haute | Ligne 7, colonnes 9 à 13 |
-| Pièces | Ligne 8, colonnes 3 à 5 ; ligne 6, colonnes 10 à 12 |
-| Buisson | Ligne 11, colonne 15 |
+| Sol, ligne du dessus | Ligne 28, toutes les colonnes |
+| Sol, remplissage | Lignes 29 à 31 |
+| Plateforme basse | Ligne 23, colonnes 4 à 10 |
+| Plateforme intermédiaire | Ligne 19, colonnes 13 à 20 |
+| Plateforme haute | Ligne 15, colonnes 23 à 29 |
+| Pièces | Ligne 22, colonnes 5, 7 et 9 ; ligne 18, colonnes 14, 16 et 18 ; ligne 14, colonnes 24, 26 et 28 |
+| Buissons | Ligne 27, colonnes 3, 20 et 30 |
 
-La ligne de sol commence à la tuile 12. Son bord supérieur se trouve donc à la coordonnée `12 × 8 = 96` pixels.
+La ligne de sol commence à la tuile 28. Son bord supérieur se trouve donc à la coordonnée `28 × 8 = 224` pixels.
 
-C'est pourquoi le joueur commence à la position verticale 88 : sa hauteur est de 8 pixels et `88 + 8 = 96`.
+C'est pourquoi le joueur commence à la position verticale 216 : sa hauteur est de 8 pixels et `216 + 8 = 224`.
 
 ### Sons et musiques
 
@@ -322,8 +324,8 @@ class Level:
 Avec :
 
 ```python
-LEVEL_WIDTH = 16
-LEVEL_HEIGHT = 16
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
 ```
 
 La classe `Level` respecte la même organisation que `Player` :
@@ -425,21 +427,21 @@ L'ordre correct est :
 import pyxel
 
 
-SCREEN_WIDTH = 128
-SCREEN_HEIGHT = 128
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
 RESOURCE_FILE = "res.pyxres"
 
 TILE_SIZE = 8
-LEVEL_WIDTH = 16
-LEVEL_HEIGHT = 16
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
 
 PLAYER_WIDTH = 8
 PLAYER_HEIGHT = 8
 PLAYER_SPEED = 1
 PLAYER_TILE_X = 0
 PLAYER_TILE_Y = 0
-PLAYER_START_X = 16
-PLAYER_START_Y = 88
+PLAYER_START_X = 40
+PLAYER_START_Y = 216
 
 BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
 TEXT_COLOR = pyxel.COLOR_WHITE
@@ -550,7 +552,7 @@ Game()
 
 Le résultat attendu est le suivant :
 
-- une fenêtre de 128 × 128 pixels ;
+- une fenêtre de 256 × 256 pixels ;
 - le niveau dessiné avec ses plateformes, ses pièces et son sol ;
 - le sprite du joueur à la place du rectangle ;
 - un bruitage à chaque rebond ;
@@ -562,9 +564,9 @@ Le résultat attendu est le suivant :
 | Point à vérifier | Résultat attendu |
 | --- | --- |
 | Fond | Bleu sombre |
-| Sol | Bande verte puis marron |
-| Plateformes | Deux blocs orange |
-| Pièces | Trois pièces au-dessus de chaque plateforme |
+| Sol | Bande verte puis marron, à partir de la ligne 28 |
+| Plateformes | Trois blocs orange étagés |
+| Pièces | Trois pièces au-dessus de chaque plateforme, soit neuf pièces |
 | Joueur | Petit personnage rouge et pêche |
 | Déplacement | Horizontal, avec rebond sur les bords |
 | Bruitage | Joué à chaque rebond |
@@ -695,7 +697,7 @@ Cette propriété est importante pour la suite : le décor peut être retravaill
 
 # À retenir
 
-- La fenêtre de jeu mesure 128 × 128 pixels, l'une des deux tailles autorisées par la Nuit du Code.
+- La fenêtre de jeu mesure 256 × 256 pixels, l'une des deux tailles autorisées par la Nuit du Code.
 - Un fichier `.pyxres` contient les images, les tilemaps, les sons et les musiques.
 - `pyxel.load()` charge les ressources et doit être appelé avant leur utilisation.
 - `pyxel.blt()` affiche une zone d'une banque d'images.
