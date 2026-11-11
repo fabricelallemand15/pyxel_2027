@@ -53,7 +53,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 2 — Fichier de ressources `.pyxres` | `02-ressources-pyxres/` | produite |
 | 3 — Joueur et contrôles | `03-joueur/` | produite |
 | 4 — Gravité et saut | `04-gravite-et-saut/` | produite |
-| 5 — Niveau et tilemap | `05-tilemap/` | à produire |
+| 5 — Niveau et tilemap | `05-tilemap/` | produite |
 | 6 — Collisions avec la tilemap | `06-collisions/` | à produire |
 | 7 — Plusieurs types d’objets | `07-objets/` | à produire |
 | 8 — Règles du jeu | `08-regles-du-jeu/` | à produire |
@@ -124,7 +124,7 @@ Le script décrit la vidéo image par image : minutage, action à l’écran, na
 
 - deux lignes vides entre les blocs de premier niveau ;
 - quatre espaces d’indentation ;
-- méthodes dans l’ordre `__init__()`, `update()`, `draw()` ;
+- méthodes dans l’ordre `__init__()`, `update()`, `draw()`, puis les méthodes auxiliaires ;
 - appels longs écrits un argument par ligne, avec virgule finale ;
 - noms de classes et d’attributs en anglais (`Player`, `Level`, `self.dx`), textes affichés et prose en français ;
 - pas d’annotation de type, pas de décorateur, pas de classe de données, pas de compréhension imbriquée, pas de générateur ;
@@ -197,6 +197,8 @@ Game()
 | Gravité | 1 pixel par image² | Accélération verticale |
 | Vitesse de saut | −11 pixels par image | Valeur négative, vers le haut |
 | Hauteur du saut | environ 55 pixels | Mesurée au sommet de la trajectoire |
+| Tuiles solides | (0, 1), (1, 1), (2, 1) | Sol, remplissage, plateforme |
+| Case vide de la tilemap | (5, 5) | Zone transparente de la banque |
 
 Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 
