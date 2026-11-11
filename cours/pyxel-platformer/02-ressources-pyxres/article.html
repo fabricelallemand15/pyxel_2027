@@ -145,20 +145,21 @@ SCREEN_HEIGHT = 256</code></pre>
 </div>
 <p>Les quatre images du joueur et la tuile de l’ennemi ne sont pas encore utilisées dans cette leçon. Elles serviront à l’animation et aux objets des leçons suivantes.</p>
 <h4>Tilemap 0</h4>
-<p>La tilemap décrit un niveau de 32 × 32 tuiles, soit 256 × 256 pixels.</p>
+<p>La tilemap décrit un niveau de 64 × 32 tuiles, soit 512 × 256 pixels : la fenêtre de 256 pixels de large n’en montre que la moitié.</p>
+<p>Ce fichier sert à toutes les leçons. Jusqu’à la leçon 8, le programme ne dessine que la moitié gauche, large de 256 pixels ; la caméra de la leçon 9 découvre la seconde moitié.</p>
 <div class="table-wrapper">
   <table>
     <thead>
       <tr><th>Élément</th><th>Position en tuiles</th></tr>
     </thead>
     <tbody>
-      <tr><td>Sol, ligne du dessus</td><td>Ligne 28, toutes les colonnes</td></tr>
-      <tr><td>Sol, remplissage</td><td>Lignes 29 à 31</td></tr>
-      <tr><td>Plateforme basse</td><td>Ligne 23, colonnes 4 à 10</td></tr>
-      <tr><td>Plateforme intermédiaire</td><td>Ligne 19, colonnes 13 à 20</td></tr>
-      <tr><td>Plateforme haute</td><td>Ligne 15, colonnes 23 à 29</td></tr>
-      <tr><td>Pièces</td><td>Ligne 22, colonnes 5, 7 et 9 ; ligne 18, colonnes 14, 16 et 18 ; ligne 14, colonnes 24, 26 et 28</td></tr>
-      <tr><td>Buissons</td><td>Ligne 27, colonnes 3, 20 et 30</td></tr>
+      <tr><td>Sol, ligne du dessus</td><td>Ligne 28, colonnes 0 à 63</td></tr>
+      <tr><td>Sol, remplissage</td><td>Lignes 29 à 31, colonnes 0 à 63</td></tr>
+      <tr><td>Plateformes, moitié gauche</td><td>Ligne 23, colonnes 4 à 10 ; ligne 19, colonnes 13 à 20 ; ligne 15, colonnes 23 à 29</td></tr>
+      <tr><td>Plateformes, moitié droite</td><td>Ligne 23, colonnes 36 à 42 ; ligne 19, colonnes 46 à 52 ; ligne 15, colonnes 56 à 62</td></tr>
+      <tr><td>Pièces, moitié gauche</td><td>Ligne 22, colonnes 5, 7 et 9 ; ligne 18, colonnes 14, 16 et 18 ; ligne 14, colonnes 24, 26 et 28</td></tr>
+      <tr><td>Pièces, moitié droite</td><td>Ligne 22, colonnes 37, 39 et 41 ; ligne 18, colonnes 47, 49 et 51 ; ligne 14, colonnes 57, 59 et 61</td></tr>
+      <tr><td>Buissons</td><td>Ligne 27, colonnes 3, 20, 30, 38, 48 et 60</td></tr>
     </tbody>
   </table>
 </div>
@@ -485,8 +486,8 @@ Game()</code></pre>
     <tbody>
       <tr><td>Fond</td><td>Bleu sombre</td></tr>
       <tr><td>Sol</td><td>Bande verte puis marron, à partir de la ligne 28</td></tr>
-      <tr><td>Plateformes</td><td>Trois blocs orange étagés</td></tr>
-      <tr><td>Pièces</td><td>Trois pièces au-dessus de chaque plateforme, soit neuf pièces</td></tr>
+      <tr><td>Plateformes</td><td>Trois blocs orange étagés, dans la moitié gauche</td></tr>
+      <tr><td>Pièces</td><td>Neuf pièces visibles ; le niveau en contient dix-huit, la seconde moitié restant hors de l’écran</td></tr>
       <tr><td>Joueur</td><td>Petit personnage rouge et pêche</td></tr>
       <tr><td>Déplacement</td><td>Horizontal, avec rebond sur les bords</td></tr>
       <tr><td>Bruitage</td><td>Joué à chaque rebond</td></tr>

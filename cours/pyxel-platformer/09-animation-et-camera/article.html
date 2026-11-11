@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leçon 9 — Animation et caméra | Formation Pyxel</title>
+  <meta name="description" content="Animer le joueur avec ses quatre images, retourner le sprite et faire défiler un niveau plus large que l’écran">
+  <link rel="stylesheet" href="../styles/article.css">
+</head>
+<body>
+  <article class="lesson">
+    <header class="lesson-header">
+      <p class="lesson-label">Formation Pyxel · Leçon 9</p>
+      <h1>Animation et caméra</h1>
+      <p class="lesson-subtitle">Animer le joueur avec ses quatre images, retourner le sprite et faire défiler un niveau plus large que l’écran</p>
+    </header>
+
+    <nav class="lesson-toc" aria-label="Sommaire">
+      <p class="lesson-toc-title">Sommaire</p>
+      <ol>
+        <li><a href="#presentation">Présentation</a></li>
+        <li><a href="#objectifs">Objectifs</a></li>
+        <li><a href="#ce-qui-change">Ce qui change</a></li>
+        <li><a href="#le-code-complet">Le code complet</a></li>
+        <li><a href="#comprendre-le-programme">Comprendre le programme</a></li>
+        <li><a href="#verifier-le-resultat">Vérifier le résultat</a></li>
+        <li><a href="#erreurs-frequentes">Erreurs fréquentes</a></li>
+        <li><a href="#experimentations">Expérimentations</a></li>
+        <li><a href="#a-retenir">À retenir</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="presentation">Présentation</h2>
+    <p>Depuis la leçon 2, la banque d’images contient quatre dessins du joueur. Un seul est utilisé : le personnage est toujours identique, qu’il marche, s’arrête ou saute. Cette leçon les fait tous servir.</p>
+    <p>Le personnage change d’image selon son activité : deux images alternées pendant la marche, une image au repos, une image en l’air. Il se retourne aussi, sans nouveau dessin : une largeur négative suffit.</p>
+    <p>Le décor, lui, s’agrandit. Le niveau du fichier de ressources mesure 512 pixels de large, deux fois la fenêtre. Jusqu’ici, le programme n’en dessinait que la moitié gauche. Cette leçon ajoute une caméra : un décalage appliqué au moment du dessin, qui laisse voir la partie du niveau où se trouve le joueur.</p>
+
+    <h2 id="objectifs">Objectifs</h2>
+    <p>À la fin de la leçon, vous devez pouvoir :</p>
+    <ol>
+      <li>choisir une image de sprite selon l’état du personnage ;</li>
+      <li>utiliser <code>pyxel.frame_count</code> pour rythmer une animation ;</li>
+      <li>retourner un sprite horizontalement ;</li>
+      <li>dessiner un niveau plus grand que l’écran ;</li>
+      <li>calculer et appliquer un décalage de caméra ;</li>
+      <li>distinguer coordonnées du monde et coordonnées de l’écran.</li>
+    </ol>
+
+    <h2 id="ce-qui-change">Ce qui change</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Élément</th><th>Leçon 8</th><th>Leçon 9</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Niveau</td><td><code>LEVEL_WIDTH = 32</code>, 256 pixels</td><td><code>LEVEL_WIDTH = 64</code>, 512 pixels</td></tr>
+          <tr><td><code>Player</code></td><td>une seule image</td><td>quatre images, direction du regard, choix de l’image</td></tr>
+          <tr><td>Limite du joueur</td><td>bords de la fenêtre</td><td>bords du niveau</td></tr>
+          <tr><td><code>Game.draw()</code></td><td>dessin fixe</td><td>caméra, puis retour à l’écran pour les textes</td></tr>
+          <tr><td>Ennemis</td><td>deux</td><td>trois, un dans la seconde moitié du niveau</td></tr>
+          <tr><td>Pièces</td><td>neuf</td><td>dix-huit, neuf par moitié</td></tr>
+          <tr><td>Règles du jeu</td><td>score et défaite</td><td>inchangées</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Le niveau existait déjà</p>
+      <p>Le fichier <code>res.pyxres</code> contient un niveau de 64 cases de large depuis le début de la formation. Les leçons 2 à 8 n’en dessinaient que la moitié gauche, large de 256 pixels. La caméra ne modifie donc pas les ressources : elle change la façon de les dessiner.</p>
+    </aside>
+
+    <h2 id="le-code-complet">Le code complet</h2>
+    <pre><code class="language-python">import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 64
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+]
+COIN_TILE = (3, 1)
+ENEMY_TILE = (4, 0)
+EMPTY_TILE = (5, 5)
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_IDLE_TILE = (0, 0)
+PLAYER_JUMP_TILE = (1, 0)
+PLAYER_WALK_TILES = [
+    (2, 0),
+    (3, 0),
+]
+ANIMATION_SPEED = 6
+PLAYER_START_X = 8
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+ENEMY_SPEED = 1
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+COIN_SOUND = 1
+HIT_SOUND = 2
+
+
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.is_alive = True
+
+    def update(self):
+        pass
+
+    def draw(self):
+        tile_x, tile_y = COIN_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Enemy:
+    def __init__(self, x, y, min_x, max_x):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.dx = ENEMY_SPEED
+        self.min_x = min_x
+        self.max_x = max_x
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x &lt; self.min_x:
+            self.x = self.min_x
+            self.dx = ENEMY_SPEED
+        elif self.x &gt; self.max_x:
+            self.x = self.max_x
+            self.dx = -ENEMY_SPEED
+
+    def draw(self):
+        tile_x, tile_y = ENEMY_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
+    def move_player(self, x, y, dx, dy):
+        return self.tilemap.collide(
+            x,
+            y,
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT,
+            dx,
+            dy,
+            SOLID_TILES,
+        )
+
+    def take_coins(self):
+        positions = []
+
+        for tile_y in range(LEVEL_HEIGHT):
+            for tile_x in range(LEVEL_WIDTH):
+                if self.tilemap.pget(tile_x, tile_y) == COIN_TILE:
+                    self.tilemap.pset(tile_x, tile_y, EMPTY_TILE)
+                    positions.append(
+                        (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
+                    )
+
+        return positions
+
+
+class Player:
+    def __init__(self, x, y, level):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+        self.is_facing_right = True
+        self.tile = PLAYER_IDLE_TILE
+        self.level = level
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+            self.is_facing_right = False
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+            self.is_facing_right = True
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+
+        was_falling = self.dy &gt; 0
+        self.dx, self.dy = self.level.move_player(
+            self.x,
+            self.y,
+            self.dx,
+            self.dy,
+        )
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            self.level.width - self.width,
+        )
+        self.y += self.dy
+
+        self.is_on_ground = was_falling and self.dy == 0
+        self.choose_tile()
+
+    def draw(self):
+        tile_x, tile_y = self.tile
+
+        if self.is_facing_right:
+            width = self.width
+        else:
+            width = -self.width
+
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+    def choose_tile(self):
+        if not self.is_on_ground:
+            self.tile = PLAYER_JUMP_TILE
+        elif self.dx != 0:
+            index = pyxel.frame_count // ANIMATION_SPEED % 2
+            self.tile = PLAYER_WALK_TILES[index]
+        else:
+            self.tile = PLAYER_IDLE_TILE
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Leçon 9 - animation et caméra",
+        )
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+            self.level,
+        )
+
+        self.coins = []
+        for x, y in self.level.take_coins():
+            self.coins.append(Coin(x, y))
+
+        self.enemies = [
+            Enemy(88, 216, 88, 160),
+            Enemy(104, 144, 104, 160),
+            Enemy(320, 216, 288, 440),
+        ]
+
+        self.score = 0
+        self.is_game_over = False
+
+        pyxel.playm(MUSIC, loop=True)
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        if self.is_game_over:
+            return
+
+        self.player.update()
+
+        for coin in self.coins:
+            coin.update()
+
+        for enemy in self.enemies:
+            enemy.update()
+
+        self.check_coins()
+        self.check_enemies()
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+
+        camera_x = pyxel.clamp(
+            self.player.x + self.player.width // 2 - pyxel.width // 2,
+            0,
+            self.level.width - pyxel.width,
+        )
+        pyxel.camera(camera_x, 0)
+
+        self.level.draw()
+
+        for coin in self.coins:
+            coin.draw()
+
+        for enemy in self.enemies:
+            enemy.draw()
+
+        self.player.draw()
+
+        pyxel.camera()
+
+        pyxel.text(
+            4,
+            4,
+            "Leçon 9 - animation et caméra",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            "Flèches : déplacer, Espace : sauter",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            20,
+            f"Score : {self.score}  Pièces : {len(self.coins)}",
+            TEXT_COLOR,
+        )
+
+        if self.is_game_over:
+            pyxel.rect(48, 96, 160, 32, pyxel.COLOR_BLACK)
+            pyxel.text(102, 100, "Partie perdue", pyxel.COLOR_RED)
+            pyxel.text(110, 112, f"Score : {self.score}", TEXT_COLOR)
+
+    def collide(self, a, b):
+        return (
+            a.x &lt; b.x + b.width
+            and a.x + a.width &gt; b.x
+            and a.y &lt; b.y + b.height
+            and a.y + a.height &gt; b.y
+        )
+
+    def check_coins(self):
+        for coin in self.coins:
+            if self.collide(self.player, coin):
+                coin.is_alive = False
+                self.score += 1
+                pyxel.play(1, COIN_SOUND)
+
+        self.coins = [coin for coin in self.coins if coin.is_alive]
+
+    def check_enemies(self):
+        for enemy in self.enemies:
+            if self.collide(self.player, enemy):
+                self.is_game_over = True
+                pyxel.play(2, HIT_SOUND)
+
+
+Game()
+</code></pre>
+
+    <h2 id="comprendre-le-programme">Comprendre le programme</h2>
+
+    <h3>Les quatre images du joueur</h3>
+    <p>La banque d’images contient quatre dessins de 8 × 8 pixels, côte à côte sur la ligne 0, et une tuile d’ennemi sur la même ligne :</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Tuile</th><th>Contenu</th><th>Usage dans cette leçon</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>(0, 0)</code></td><td>joueur au repos, image 0</td><td>arrêt</td></tr>
+          <tr><td><code>(1, 0)</code></td><td>joueur au repos, image 1</td><td>saut</td></tr>
+          <tr><td><code>(2, 0)</code></td><td>joueur en marche, image 0</td><td>marche</td></tr>
+          <tr><td><code>(3, 0)</code></td><td>joueur en marche, image 1</td><td>marche</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Les quatre images sont déclarées en constantes : une pour le repos, une pour le saut, et une liste pour les deux images de marche.</p>
+    <pre><code class="language-python">PLAYER_IDLE_TILE = (0, 0)
+PLAYER_JUMP_TILE = (1, 0)
+PLAYER_WALK_TILES = [
+    (2, 0),
+    (3, 0),
+]
+ANIMATION_SPEED = 6</code></pre>
+    <p>Les images de marche sont dans une liste parce qu’elles s’utilisent à tour de rôle : un index de 0 ou 1 suffit à choisir.</p>
+
+    <h3>Choisir l’image au bon moment</h3>
+    <pre><code class="language-python">def choose_tile(self):
+    if not self.is_on_ground:
+        self.tile = PLAYER_JUMP_TILE
+    elif self.dx != 0:
+        index = pyxel.frame_count // ANIMATION_SPEED % 2
+        self.tile = PLAYER_WALK_TILES[index]
+    else:
+        self.tile = PLAYER_IDLE_TILE</code></pre>
+    <p>Trois cas, examinés dans cet ordre :</p>
+    <ol>
+      <li>le joueur n’est pas au sol : il saute, l’image de saut s’applique, même s’il se déplace ;</li>
+      <li>il est au sol et se déplace : l’image de marche alterne ;</li>
+      <li>il est au sol et immobile : l’image de repos s’applique.</li>
+    </ol>
+    <p>L’ordre compte : un joueur qui saute en avant remplit deux conditions, et c’est la première qui décide.</p>
+    <p>La méthode est appelée à la fin de <code>update()</code>, une fois <code>is_on_ground</code> et <code>dx</code> connus. Avant, elle lirait les valeurs de l’image précédente.</p>
+
+    <aside class="callout callout-tip">
+      <p class="callout-title">dx après la collision</p>
+      <p><code>self.dx</code> est le déplacement réellement autorisé, pas la touche pressée. Un joueur qui pousse contre un mur a donc <code>dx</code> égal à zéro et reprend l’image de repos : il ne « marche pas sur place ».</p>
+    </aside>
+
+    <h3>Le temps en images</h3>
+    <p><code>pyxel.frame_count</code> est un compteur fourni par Pyxel : il vaut 0 au lancement, puis augmente de 1 à chaque image. À trente images par seconde, une seconde correspond à trente unités.</p>
+    <p>L’expression <code>pyxel.frame_count // ANIMATION_SPEED % 2</code> transforme ce compteur en 0 ou 1, en changeant toutes les six images :</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th><code>frame_count</code></th><th><code>// 6</code></th><th><code>% 2</code></th><th>Image affichée</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0 à 5</td><td>0</td><td>0</td><td><code>(2, 0)</code></td></tr>
+          <tr><td>6 à 11</td><td>1</td><td>1</td><td><code>(3, 0)</code></td></tr>
+          <tr><td>12 à 17</td><td>2</td><td>0</td><td><code>(2, 0)</code></td></tr>
+          <tr><td>18 à 23</td><td>3</td><td>1</td><td><code>(3, 0)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La division entière ralentit le rythme, le reste de la division le ramène à deux valeurs. Aucune variable n’est nécessaire : le compteur d’images suffit, et deux joueurs animés resteraient synchronisés.</p>
+
+    <h3>Retourner un sprite</h3>
+    <p>Inutile de dessiner un personnage tourné vers la gauche : la même image suffit, à condition de la retourner. <code>pyxel.blt()</code> accepte une largeur négative, ce qui inverse le dessin horizontalement, sans le décaler.</p>
+    <pre><code class="language-python">if self.is_facing_right:
+    width = self.width
+else:
+    width = -self.width</code></pre>
+    <p>La direction est retenue au moment de la lecture des touches : appuyer sur la flèche gauche met <code>is_facing_right</code> à faux, la flèche droite à vrai. Le personnage garde donc son orientation après le relâchement de la touche.</p>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Pourquoi une largeur négative</p>
+      <p>Une largeur négative indique à Pyxel de lire les pixels de droite à gauche. L’image occupe exactement le même rectangle à l’écran : seule son orientation change. La hauteur pourrait être négative de la même façon, pour un sprite retourné verticalement.</p>
+    </aside>
+
+    <h3>Un niveau deux fois plus large que l’écran</h3>
+    <p>Le niveau mesure 64 cases de large sur 32 de haut, soit 512 × 256 pixels. La fenêtre n’en montre que 256 pixels de large : il faut choisir quelle portion afficher.</p>
+    <ul>
+      <li>Les objets gardent leurs <strong>coordonnées du monde</strong> : la pièce de la seconde moitié est à <code>x = 456</code>, même si elle est hors de l’écran.</li>
+      <li>L’écran, lui, va de 0 à 255. Un objet n’y apparaît que si sa position du monde, diminuée du décalage, tombe dans cet intervalle.</li>
+    </ul>
+    <p>La constante <code>LEVEL_WIDTH</code> passe de 32 à 64 : le niveau dessiné, la limite du joueur et le balayage des pièces s’appuient dessus. Le programme trouve ainsi les dix-huit pièces du niveau, neuf par moitié.</p>
+
+    <h3>La caméra</h3>
+    <pre><code class="language-python">camera_x = pyxel.clamp(
+    self.player.x + self.player.width // 2 - pyxel.width // 2,
+    0,
+    self.level.width - pyxel.width,
+)
+pyxel.camera(camera_x, 0)</code></pre>
+    <p>Le calcul place le centre du joueur au centre de la fenêtre : la position du joueur, plus la moitié de sa largeur, moins la moitié de l’écran. <code>pyxel.clamp()</code> empêche ensuite la caméra de sortir du niveau : jamais avant 0, jamais après 256.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Position du joueur</th><th>Calcul</th><th>Caméra</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>x = 8</code></td><td><code>8 + 4 - 128 = -116</code></td><td><code>0</code></td></tr>
+          <tr><td><code>x = 100</code></td><td><code>100 + 4 - 128 = -24</code></td><td><code>0</code></td></tr>
+          <tr><td><code>x = 300</code></td><td><code>300 + 4 - 128 = 176</code></td><td><code>176</code></td></tr>
+          <tr><td><code>x = 504</code></td><td><code>504 + 4 - 128 = 380</code></td><td><code>256</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>pyxel.camera(x, y)</code> ne déplace aucun objet : elle décale le dessin. Toutes les opérations de dessin suivantes sont translatées de <code>-x</code> et <code>-y</code>, ce qui simule un déplacement de la vue. Les attributs <code>x</code> et <code>y</code> des objets ne changent pas.</p>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">La caméra n’est pas un objet du jeu</p>
+      <p>Elle ne fait partie ni du niveau ni du joueur : c’est un réglage global de Pyxel. Elle s’applique à tout ce qui est dessiné ensuite, y compris les textes, c’est pourquoi il faut la remettre à zéro avant de dessiner l’interface.</p>
+    </aside>
+
+    <h3>Revenir à l’écran pour les textes</h3>
+    <pre><code class="language-python">self.player.draw()
+
+pyxel.camera()</code></pre>
+    <p>Appelée sans argument, <code>pyxel.camera()</code> remet le décalage à zéro. Le score, les pièces restantes et le message de défaite restent ainsi collés aux bords de la fenêtre, quel que soit l’endroit du niveau affiché.</p>
+    <p>L’ordre du dessin reste celui de la leçon 7 : fond, niveau, pièces, ennemis, joueur, puis interface.</p>
+
+    <h3>Le joueur dans le niveau, plus dans la fenêtre</h3>
+    <pre><code class="language-python">self.x = pyxel.clamp(
+    self.x,
+    0,
+    self.level.width - self.width,
+)</code></pre>
+    <p>Depuis la leçon 3, le joueur était retenu par les bords de la fenêtre. Avec un niveau plus large, cette limite deviendrait un mur invisible au milieu du décor. Le joueur est désormais retenu par les bords du niveau : 0 à gauche, 504 à droite.</p>
+    <p>La collision avec la tilemap, elle, ne change pas : <code>move_player()</code> utilise toujours la liste des tuiles solides.</p>
+
+    <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Point à vérifier</th><th>Résultat attendu</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Au démarrage</td><td>Le joueur est au repos, image <code>(0, 0)</code>, caméra à 0</td></tr>
+          <tr><td>Marche à droite</td><td>Les deux images de marche alternent, environ cinq fois par seconde</td></tr>
+          <tr><td>Marche à gauche</td><td>Le sprite est retourné, les pieds restent au même endroit</td></tr>
+          <tr><td>Arrêt</td><td>Retour à l’image de repos</td></tr>
+          <tr><td>Saut</td><td>Image <code>(1, 0)</code> pendant toute la durée du saut</td></tr>
+          <tr><td>Poussée contre un mur</td><td>Le joueur reprend l’image de repos : il ne marche pas sur place</td></tr>
+          <tr><td>Déplacement vers la droite</td><td>Le décor défile, le joueur reste au centre de la fenêtre</td></tr>
+          <tr><td>Bords du niveau</td><td>La caméra s’arrête à 0 et à 256, le joueur s’arrête à 0 et à 504</td></tr>
+          <tr><td>Interface</td><td>Le score reste fixe en haut de l’écran, même quand le décor défile</td></tr>
+          <tr><td>Règles du jeu</td><td>Pièces, score et défaite fonctionnent comme avant</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Le compteur affiche dix-huit pièces : le balayage du niveau couvre maintenant ses deux moitiés.</p>
+
+    <h2 id="erreurs-frequentes">Erreurs fréquentes</h2>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">L’interface défile avec le décor</p>
+      <p>Oublier <code>pyxel.camera()</code> avant les textes les fait sortir de l’écran dès que la caméra avance. Le score disparaît vers la gauche en même temps que le décor.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">La caméra montre du vide</p>
+      <p>Sans <code>pyxel.clamp()</code>, la caméra devient négative au début du niveau ou dépasse la fin : le décor laisse apparaître une bande de fond uni sur le bord de l’écran.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">La caméra calée sur le coin du joueur</p>
+      <p>Utiliser <code>self.player.x</code> sans ajouter la moitié de sa largeur place le joueur au bord gauche de l’écran, et non au centre. Le personnage reste collé au bord, ce qui rend le défilement désagréable.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Le niveau reste coupé à 256 pixels</p>
+      <p>Oublier de passer <code>LEVEL_WIDTH</code> à 64 laisse le joueur buter sur une limite invisible au milieu du décor, et le programme ne trouve que neuf pièces au lieu de dix-huit.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Le sprite retourné saute de côté</p>
+      <p>Avec une largeur négative, Pyxel dessine dans le même rectangle : ne décalez pas <code>x</code> en même temps. Ajouter <code>self.width</code> à la position ferait glisser le personnage d’une tuile à chaque changement de direction.</p>
+    </aside>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">L’animation ne démarre pas</p>
+      <p>Appeler <code>choose_tile()</code> avant la mise à jour de <code>dx</code> et de <code>is_on_ground</code> lit les valeurs de l’image précédente : le personnage garde une image en retard, ou reste figé au repos pendant la marche.</p>
+    </aside>
+
+    <h2 id="experimentations">Expérimentations</h2>
+    <p>Ces modifications sont facultatives.</p>
+
+    <h3>Une animation plus rapide</h3>
+    <pre><code class="language-python">ANIMATION_SPEED = 3</code></pre>
+    <p>Le changement d’image a lieu toutes les trois images au lieu de six : les jambes s’agitent deux fois plus vite. Une valeur de 1 donne une animation frénétique, une valeur de 15 un pas très lent.</p>
+
+    <h3>Trois images de marche</h3>
+    <pre><code class="language-python">PLAYER_WALK_TILES = [(0, 0), (2, 0), (3, 0)]</code></pre>
+    <p>La liste contient maintenant trois tuiles, mais l’index reste calculé avec <code>% 2</code> : la troisième ne s’afficherait jamais. Il faut écrire <code>% len(PLAYER_WALK_TILES)</code> pour que l’animation parcoure toute la liste.</p>
+
+    <h3>Animer l’ennemi</h3>
+    <p>La banque d’images ne contient qu’un dessin d’ennemi. En dessiner un second dans l’éditeur, par exemple en tuile <code>(5, 0)</code>, puis alterner :</p>
+    <pre><code class="language-python">index = pyxel.frame_count // 8 % 2
+tile_x = 4 + index</code></pre>
+    <p>Les deux images se suivent sur la ligne 0 : l’index sert directement de décalage de colonne.</p>
+
+    <h3>Afficher la caméra</h3>
+    <pre><code class="language-python">pyxel.text(4, 28, f"Caméra : {camera_x}", TEXT_COLOR)</code></pre>
+    <p>Cette ligne, ajoutée après la remise à zéro, montre la valeur du décalage. Elle vaut 0 dans la première moitié du niveau, puis augmente jusqu’à 256.</p>
+
+    <h3>Une caméra qui suit avec du retard</h3>
+    <pre><code class="language-python">self.camera_x = self.camera_x + (camera_x - self.camera_x) // 4</code></pre>
+    <p>En conservant la caméra dans un attribut et en la rapprochant progressivement de sa cible, le défilement devient plus doux. La caméra semble avoir de l’inertie quand le joueur change de direction.</p>
+
+    <h3>Un niveau plus haut que l’écran</h3>
+    <pre><code class="language-python">pyxel.camera(camera_x, camera_y)</code></pre>
+    <p>La caméra accepte deux valeurs. Avec un niveau de 64 cases de haut, la même formule appliquée à <code>y</code> fait défiler le décor verticalement. Il faut alors penser à dessiner le niveau sur toute sa hauteur.</p>
+
+    <h2 id="a-retenir">À retenir</h2>
+    <ul>
+      <li>Une animation est une suite d’images choisies à tour de rôle.</li>
+      <li><code>pyxel.frame_count</code> compte les images depuis le lancement : c’est une horloge.</li>
+      <li><code>// ANIMATION_SPEED % 2</code> transforme ce compteur en index de 0 ou 1.</li>
+      <li>Une largeur négative retourne un sprite sans le déplacer.</li>
+      <li>Les objets gardent des coordonnées du monde ; la caméra décale le dessin au dernier moment.</li>
+      <li><code>pyxel.camera()</code> sans argument remet le décalage à zéro : indispensable avant l’interface.</li>
+      <li><code>pyxel.clamp()</code> empêche la caméra de dépasser les bords du niveau.</li>
+      <li>Le joueur est limité par le niveau, plus par la taille de la fenêtre.</li>
+    </ul>
+
+    <p>Dans la prochaine leçon, le jeu reçoit son interface complète : un écran titre, un écran de fin, une musique lancée au bon moment et un compteur de vies ou de temps.</p>
+
+  </article>
+</body>
+</html>

@@ -70,7 +70,7 @@ Le règlement de la Nuit du Code impose par ailleurs une fenêtre de jeu de 128 
 
 La formation retient **256 × 256 pixels** :
 
-- le niveau de référence occupe 32 × 32 tuiles et remplit exactement l'écran ;
+- un écran de 256 × 256 pixels correspond à 32 × 32 tuiles ; le niveau de référence en occupe 64 × 32 et défile à partir de la leçon 9 ;
 - le décor peut comporter plusieurs plateformes étagées sans être à l'étroit ;
 - les sprites de 8 × 8 pixels restent petits par rapport à la fenêtre, ce qui donne un rendu lisible.
 
@@ -236,12 +236,12 @@ Contenu livré avec la leçon 2 :
 
 #### Tilemap 0
 
-Niveau de 32 × 32 tuiles, soit 256 × 256 pixels :
+Niveau de 64 × 32 tuiles, soit 512 × 256 pixels (deux écrans de large) :
 
 - sol à partir de la ligne 28 ;
 - trois plateformes étagées aux lignes 23, 19 et 15 ;
-- neuf pièces, trois par plateforme ; elles deviennent des objets à la leçon 7 ;
-- trois buissons décoratifs sur le sol.
+- dix-huit pièces, trois par plateforme, neuf par moitié ; elles deviennent des objets à la leçon 7 ;
+- six buissons décoratifs sur le sol.
 
 #### Sons
 
@@ -828,6 +828,15 @@ pyxel.camera()
 - coordonnées du monde ;
 - coordonnées de l'écran ;
 - caméra comme décalage de dessin.
+
+### Mise en œuvre retenue
+
+- le niveau passe à 64 cases de large, soit 512 pixels : `LEVEL_WIDTH = 64` ;
+- quatre tuiles du joueur : `(0, 0)` repos, `(1, 0)` saut, `(2, 0)` et `(3, 0)` marche ;
+- `choose_tile()` choisit l'image en fin de `update()`, avec `pyxel.frame_count // 6 % 2` ;
+- retournement par largeur négative, sans décaler `x` ;
+- caméra centrée sur le joueur, bornée par `pyxel.clamp()` entre 0 et 256, remise à zéro avant l'interface ;
+- le joueur est limité par `level.width`, plus par la fenêtre.
 
 ### Défi facultatif
 
