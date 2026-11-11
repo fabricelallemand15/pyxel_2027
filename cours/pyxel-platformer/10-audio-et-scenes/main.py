@@ -391,6 +391,7 @@ class Game:
             if self.collide(self.player, enemy):
                 self.scene = SCENE_GAMEOVER
                 pyxel.stop()
+                pyxel.play(2, HIT_SOUND)
 
 
 Game()

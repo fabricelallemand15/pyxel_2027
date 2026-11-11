@@ -221,7 +221,7 @@ PLAYER_SPEED = 1
 >
 > Nous définissons ensuite les dimensions de l’écran, la hauteur du sol et les dimensions du joueur.
 >
-> Les deux premières valeurs fixent la taille de la fenêtre : 256 pixels sur 256. C'est l'une des deux tailles autorisées par le règlement de la Nuit du Code, avec 128 sur 128. La formation conserve 256 sur 256.
+> Les deux premières valeurs fixent la taille de la fenêtre : 256 pixels sur 256. C’est l’une des deux tailles autorisées par le règlement de la Nuit du Code, avec 128 sur 128. La formation conserve 256 sur 256.
 >
 > Une constante est un nom donné à une valeur utilisée à plusieurs endroits. Ici, `PLAYER_WIDTH` et `PLAYER_HEIGHT` décrivent la taille du joueur. Cela évite de recopier plusieurs fois les nombres 8 dans le programme.
 
