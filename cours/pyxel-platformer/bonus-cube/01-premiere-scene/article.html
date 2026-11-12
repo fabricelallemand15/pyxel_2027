@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bonus Cube 1 — Une première scène 3D | Formation Pyxel</title>
+  <meta name="description" content="Découvrir Pyxel Cube : installer une caméra, dessiner un sol et un cube, et faire tourner un objet en trois dimensions">
+  <link rel="stylesheet" href="../styles/article.css">
+</head>
+<body>
+  <article class="lesson">
+    <header class="lesson-header">
+      <p class="lesson-label">Formation Pyxel · Module bonus · Cube 1</p>
+      <h1>Une première scène 3D</h1>
+      <p class="lesson-subtitle">Ouvrir Pyxel Cube, placer une caméra, dessiner un sol et un cube, et le faire tourner</p>
+    </header>
+
+    <nav class="lesson-toc" aria-label="Sommaire">
+      <p class="lesson-toc-title">Sommaire</p>
+      <ol>
+        <li><a href="#presenter">Présentation</a></li>
+        <li><a href="#objectifs">Objectifs</a></li>
+        <li><a href="#le-repere">Le repère de Pyxel Cube</a></li>
+        <li><a href="#le-code-complet">Le code complet</a></li>
+        <li><a href="#comprendre-le-programme">Comprendre le programme</a></li>
+        <li><a href="#verifier-le-resultat">Vérifier le résultat</a></li>
+        <li><a href="#erreurs-frequentes">Erreurs fréquentes</a></li>
+        <li><a href="#experimentations">Personnaliser la scène</a></li>
+        <li><a href="#a-retenir">À retenir</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="presenter">Présentation</h2>
+    <p>Le jeu 2D est terminé. Le module bonus s’attaque à la troisième dimension avec Pyxel Cube, le moteur 3D livré avec Pyxel depuis la version 3.0.</p>
+    <p>Ce premier chapitre tient en une promesse : à la fin, une fenêtre affiche un sol et un cube qui tourne. Rien de plus, et c’est volontaire. Le cube est le programme le plus court qui montre les quatre pièces d’une scène 3D : un nœud, une transformation, une caméra, un dessin.</p>
+    <p>La différence de méthode avec le parcours 2D est nette. En 2D, vous écriviez un <code>Game</code> qui appelait <code>pyxel.blt()</code>, et vous calculiez vous-même le décalage de la caméra. En 3D, Pyxel Cube impose sa structure : un arbre de nœuds, chacun capable de se mettre à jour et de se dessiner, et une caméra qui projette l’ensemble. Vous ne réécrivez pas cette mécanique, vous l’utilisez.</p>
+
+    <aside class="callout callout-warning">
+      <p class="callout-title">Vérifier la version avant de commencer</p>
+      <p>Le module <code>pyxel.cube</code> n’existe pas dans Pyxel 2. Si <code>from pyxel.cube import Camera</code> provoque une erreur <code>ModuleNotFoundError</code>, c’est que la version installée est trop ancienne. Tout le module bonus suppose Pyxel 3.0.1.</p>
+    </aside>
+
+    <h2 id="objectifs">Objectifs</h2>
+    <p>À la fin du chapitre, vous devez pouvoir :</p>
+    <ol>
+      <li>importer les classes de <code>pyxel.cube</code> et savoir à quoi elles servent ;</li>
+      <li>écrire une scène sous forme de sous-classe de <code>Node</code> ;</li>
+      <li>placer une caméra avec <code>Mat4.look_at()</code> ;</li>
+      <li>dessiner une boîte colorée avec <code>box()</code> ;</li>
+      <li>situer un objet avec ses trois coordonnées <code>x</code>, <code>y</code> et <code>z</code> ;</li>
+      <li>faire tourner un objet autour d’un axe ;</li>
+      <li>relier la scène à la fenêtre par <code>pyxel.run()</code>.</li>
+    </ol>
+
+    <h2 id="le-repere">Le repère de Pyxel Cube</h2>
+    <p>Avant d’écrire une ligne, il faut savoir où sont les axes, sinon les objets se placent au hasard. Pyxel Cube utilise un repère droitier, avec trois axes :</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Axe</th><th>Direction</th><th>Exemple dans le chapitre</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>x</code></td><td>vers la droite</td><td>le cube est à <code>x = 0</code>, au centre</td></tr>
+          <tr><td><code>y</code></td><td>vers le haut</td><td>le sol est à <code>y = 0</code>, le cube au-dessus</td></tr>
+          <tr><td><code>z</code></td><td>vers vous, hors de l’écran</td><td>la caméra est à <code>z = 140</code>, devant la scène</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La caméra regarde vers les <code>z</code> négatifs : c’est la constante <code>Vec3.FORWARD</code>, qui vaut <code>(0, 0, -1)</code>. Une caméra placée à <code>z = 140</code> voit donc la scène qui se trouve plus près de zéro, exactement comme dans le chapitre.</p>
+    <p>Les unités sont libres. Pyxel Cube ne connaît ni tuile ni pixel : une longueur de 32 vaut 32 unités de monde, et c’est la caméra qui décide de la taille à l’écran. Le chapitre garde des nombres proches des pixels 2D, avec un sol de 200 unités de côté, pour que les ordres de grandeur restent familiers.</p>
+
+    <aside class="callout callout-tip">
+      <p class="callout-title">Le sol sert de repère</p>
+      <p>Un objet seul dans le vide ne montre pas où est le haut. Le sol du chapitre n’est pas décoratif : il rend le sens de <code>y</code> évident, et il rend visible la moitié des erreurs de placement.</p>
+    </aside>
+
+    <h2 id="le-code-complet">Le code complet</h2>
+    <pre><code class="language-python">import pyxel
+from pyxel.cube import Camera, Mat4, Node, Shading, Vec3
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+BACKGROUND_COLOR = pyxel.COLOR_BLACK
+
+GROUND_SIZE = 200.0
+GROUND_COLOR = pyxel.COLOR_GREEN
+
+CUBE_SIZE = 32.0
+CUBE_COLOR = pyxel.COLOR_CYAN
+CUBE_HEIGHT = 16.0
+CUBE_SPEED = 1.0
+
+CAMERA_HEIGHT = 60.0
+CAMERA_DISTANCE = 140.0
+
+
+class Ground(Node):
+    def on_draw(self):
+        self.box(
+            Mat4.from_translation(Vec3(0.0, -1.0, 0.0)),
+            Vec3(GROUND_SIZE, 2.0, GROUND_SIZE),
+            GROUND_COLOR,
+        )
+
+
+class Cube(Node):
+    def on_update(self):
+        spin = Mat4.from_euler(
+            Vec3(0.0, pyxel.frame_count * CUBE_SPEED, 0.0),
+        )
+        self.transform = (
+            Mat4.from_translation(Vec3(0.0, CUBE_HEIGHT, 0.0)) * spin
+        )
+
+    def on_draw(self):
+        self.box(
+            Mat4.IDENTITY,
+            Vec3(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE),
+            CUBE_COLOR,
+        )
+
+
+class Scene(Node):
+    def __init__(self):
+        super().__init__()
+
+        self.shading = Shading(pyxel.colors)
+
+        self.camera = Camera()
+        self.camera.clear_color = BACKGROUND_COLOR
+        self.camera.transform = Mat4.look_at(
+            Vec3(0.0, CAMERA_HEIGHT, CAMERA_DISTANCE),
+            Vec3(0.0, CUBE_HEIGHT, 0.0),
+        )
+
+        self.add_child(Ground())
+        self.add_child(Cube())
+
+
+class App:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Cube 1 - scene 3D",
+        )
+
+        self.scene = Scene()
+
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.scene.update()
+
+    def draw(self):
+        self.scene.draw(0, 0, pyxel.width, pyxel.height)
+
+
+App()</code></pre>
+
+    <h2 id="comprendre-le-programme">Comprendre le programme</h2>
+
+    <h3>Trois lignes d’import</h3>
+    <p>Le programme importe <code>pyxel</code> comme d’habitude, puis les cinq classes utiles du module 3D :</p>
+    <ul>
+      <li><code>Node</code> : un nœud de l’arbre de scène, avec ses enfants ;</li>
+      <li><code>Camera</code> : le point de vue qui projette la scène ;</li>
+      <li><code>Vec3</code> : un vecteur à trois coordonnées, utilisé pour les positions et les tailles ;</li>
+      <li><code>Mat4</code> : une matrice de transformation, utilisée pour placer et orienter ;</li>
+      <li><code>Shading</code> : la table de luminosité qui donne du relief aux faces.</li>
+    </ul>
+    <p>Le reste du fichier ne contient que des constantes, quatre classes et deux appels à Pyxel.</p>
+
+    <h3>Un sol et un cube, deux nœuds</h3>
+    <p><code>Ground</code> et <code>Cube</code> héritent de <code>Node</code> et redéfinissent une seule méthode : <code>on_draw()</code>. C’est le point qui change tout par rapport au parcours 2D. Personne n’appelle <code>on_draw()</code> dans le code : c’est <code>draw()</code> sur la scène qui parcourt l’arbre et appelle chaque nœud.</p>
+    <p>À l’intérieur, un seul appel :</p>
+    <pre><code class="language-python">self.box(Mat4.IDENTITY, Vec3(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE), CUBE_COLOR)</code></pre>
+    <p><code>box()</code> dessine une boîte pleine. Le premier argument est un placement, le deuxième les trois longueurs d’arête, le troisième une couleur de la palette. <code>Mat4.IDENTITY</code> signifie « aucune transformation supplémentaire » : la boîte est dessinée exactement là où le nœud se trouve. Le placement est relatif au nœud, pas au monde, ce qui permet de dessiner une forme simple et de déplacer le nœud librement.</p>
+    <p>Le sol mesure 200 unités de côté et 2 d’épaisseur. Il est placé à <code>y = -1</code>, donc sa face supérieure tombe exactement sur <code>y = 0</code>. Le cube mesure 32 unités et son centre est à <code>y = 16</code> : sa face inférieure touche elle aussi <code>y = 0</code>. Ces deux calculs expliquent pourquoi le cube paraît posé sur le sol et non enfoncé dedans.</p>
+
+    <h3>La scène porte la caméra</h3>
+    <p><code>Scene</code> est la racine de l’arbre. Son constructeur fait quatre choses, dans cet ordre.</p>
+    <ol>
+      <li><code>self.shading = Shading(pyxel.colors)</code> construit une table de luminosité à partir de la palette : pour chaque couleur, huit niveaux, du plus sombre au plus clair. Une lumière par défaut éclaire la scène ; sans elle, toutes les faces auraient la même teinte et le cube ressemblerait à un carré.</li>
+      <li><code>self.camera = Camera()</code> crée le point de vue. La caméra est posée sur la scène, pas sur un objet : <code>draw()</code> l’utilise pour tout le sous-arbre.</li>
+      <li><code>self.camera.clear_color = BACKGROUND_COLOR</code> demande à remplir la zone de dessin avec du noir avant de projeter la scène.</li>
+      <li><code>self.camera.transform = Mat4.look_at(...)</code> oriente la caméra. Le premier vecteur est la position de l’œil, le second le point visé. Le troisième argument, l’axe vertical, est facultatif et vaut <code>Vec3.UP</code> par défaut.</li>
+    </ol>
+    <p>La caméra se trouve à <code>(0, 60, 140)</code> et vise <code>(0, 16, 0)</code>, le centre du cube. Elle est donc un peu plus haut que le cube et à 140 unités devant lui. Les réglages par défaut de <code>Camera</code> suffisent : champ de vision vertical de 60 degrés, plan proche à 0,1 et plan lointain à 1000. Seuls les objets situés entre ces deux distances sont dessinés.</p>
+
+    <aside class="callout callout-note">
+      <p class="callout-title">Pourquoi doubler la mise à jour et le dessin</p>
+      <p>Chaque nœud a deux méthodes vides, <code>on_update()</code> et <code>on_draw()</code>. Vous ne redéfinissez que celles dont vous avez besoin : le sol ne bouge pas, il n’a donc que <code>on_draw()</code> ; le cube a les deux.</p>
+    </aside>
+
+    <h3>Une rotation calculée à chaque image</h3>
+    <p>La mise à jour du cube tient en trois lignes :</p>
+    <pre><code class="language-python">spin = Mat4.from_euler(Vec3(0.0, pyxel.frame_count * CUBE_SPEED, 0.0))
+self.transform = Mat4.from_translation(Vec3(0.0, CUBE_HEIGHT, 0.0)) * spin</code></pre>
+    <p><code>Mat4.from_euler()</code> construit une rotation à partir de trois angles exprimés en degrés, appliqués autour des axes <code>x</code>, puis <code>y</code>, puis <code>z</code>. Ici, seul l’angle <code>y</code> varie : le cube tourne sur lui-même comme une toupie. Avec <code>CUBE_SPEED = 1.0</code> et 30 images par seconde, l’angle augmente de 30 degrés par seconde, soit un tour complet en douze secondes.</p>
+    <p>La multiplication de matrices se lit de gauche à droite dans l’ordre des opérations : d’abord la rotation, puis la translation. Le cube tourne donc sur lui-même, puis se place à la hauteur voulue. Inverser les deux termes ferait tourner le cube autour du centre du monde, et il décrirait un cercle au lieu de rester sur place.</p>
+    <p>La position est recalculée entièrement à chaque image à partir de <code>pyxel.frame_count</code>, jamais ajoutée à la valeur précédente. C’est volontaire : une addition répétée finit par accumuler les erreurs d’arrondi, alors qu’un calcul absolu ne dérive pas, même après plusieurs heures.</p>
+
+    <h3>App : la fenêtre et la boucle</h3>
+    <p>La classe <code>App</code> ne fait que relier la scène à Pyxel. <code>pyxel.init()</code> ouvre une fenêtre de 256 sur 256 avec un titre, puis <code>pyxel.run(self.update, self.draw)</code> prend la main : Pyxel appelle ces deux méthodes à chaque image, trente fois par seconde.</p>
+    <p><code>update()</code> traite la touche <code>Q</code>, puis appelle <code>self.scene.update()</code> : la scène parcourt son arbre et exécute les <code>on_update()</code>. <code>draw()</code> appelle <code>self.scene.draw(0, 0, pyxel.width, pyxel.height)</code> : la scène parcourt à nouveau son arbre, mais cette fois pour dessiner, avec la caméra trouvée sur la racine.</p>
+    <p>Une seule ligne relie les deux mondes, celle de <code>draw()</code>. Tout ce qui suit dans le parcours bonus se contente d’enrichir l’arbre : des nœuds en plus, des transformations en plus, un peu de logique.</p>
+
+    <h2 id="verifier-le-resultat">Vérifier le résultat</h2>
+    <p>Lancez le programme et contrôlez ces cinq points.</p>
+    <ol>
+      <li>La fenêtre s’intitule « Cube 1 - scene 3D » et mesure 256 sur 256 pixels.</li>
+      <li>Un sol plat occupe le bas de l’écran, vu de dessus et de face à la fois.</li>
+      <li>Un cube coloré posé sur le sol tourne régulièrement autour de son axe vertical, sans à-coup ni tremblement.</li>
+      <li>Les faces du cube n’ont pas toutes la même teinte : le relief est visible.</li>
+      <li>La touche <code>Q</code> ferme la fenêtre proprement.</li>
+    </ol>
+    <p>Si le cube tourne mais que le sol tremble, la rotation est appliquée à la scène au lieu du cube. Si l’image est parfaitement figée, <code>self.scene.update()</code> a été oublié dans <code>update()</code>.</p>
+
+    <h2 id="erreurs-frequentes">Erreurs fréquentes</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Symptôme</th><th>Cause</th><th>Correction</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>ModuleNotFoundError: No module named 'pyxel.cube'</code></td><td>version de Pyxel antérieure à 3.0</td><td>installer Pyxel 3.0.1, puis relancer</td></tr>
+          <tr><td>erreur signalant qu’aucune caméra n’est définie</td><td><code>self.camera</code> jamais créé sur la scène</td><td>créer la <code>Camera</code> dans <code>Scene.__init__()</code></td></tr>
+          <tr><td>fenêtre noire, sans rien</td><td><code>self.scene.draw()</code> absent de <code>App.draw()</code></td><td>appeler <code>draw()</code> sur la scène, avec la zone de dessin</td></tr>
+          <tr><td>cube immobile</td><td><code>self.scene.update()</code> absent de <code>App.update()</code></td><td>appeler <code>update()</code> sur la scène à chaque image</td></tr>
+          <tr><td>cube à moitié enterré</td><td>centre placé à <code>y = 0</code> alors que l’arête mesure 32</td><td>centrer à <code>y = 16</code>, soit la moitié de la hauteur</td></tr>
+          <tr><td>cube qui décrit un cercle</td><td>ordre des matrices inversé</td><td>écrire translation <code>*</code> rotation</td></tr>
+          <tr><td>cube décalé de deux fois sa position</td><td><code>self.transform</code> passé à <code>box()</code></td><td>passer <code>Mat4.IDENTITY</code> comme placement</td></tr>
+          <tr><td><code>TypeError</code> sur <code>box()</code></td><td>taille écrite en nombre au lieu d’un <code>Vec3</code></td><td>écrire <code>Vec3(32.0, 32.0, 32.0)</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="callout callout-important">
+      <p class="callout-title">Les trois appels à ne pas oublier</p>
+      <p>Une scène 3D silencieuse vient presque toujours de l’un de ces trois appels manquants : la caméra dans le constructeur, <code>update()</code> dans la mise à jour, <code>draw()</code> dans le dessin. Avant de chercher ailleurs, vérifiez les trois.</p>
+    </aside>
+
+    <h2 id="experimentations">Personnaliser la scène</h2>
+    <p>Chaque modification se fait à un seul endroit. Rejouez le programme après chacune.</p>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Idée</th><th>Où intervenir</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Changer la taille du cube</td><td><code>CUBE_SIZE</code>, puis la moitié dans <code>CUBE_HEIGHT</code></td></tr>
+          <tr><td>Changer la couleur du cube</td><td><code>CUBE_COLOR</code>, une couleur de la palette</td></tr>
+          <tr><td>Accélérer la rotation</td><td><code>CUBE_SPEED</code>, en degrés par image</td></tr>
+          <tr><td>Incliner la rotation</td><td>ajouter un angle sur <code>x</code> dans <code>Vec3</code> de <code>from_euler()</code></td></tr>
+          <tr><td>Voir le cube de plus haut</td><td><code>CAMERA_HEIGHT</code></td></tr>
+          <tr><td>Voir le cube de plus loin</td><td><code>CAMERA_DISTANCE</code></td></tr>
+          <tr><td>Agrandir le sol</td><td><code>GROUND_SIZE</code></td></tr>
+          <tr><td>Déplacer le cube sur le côté</td><td><code>x</code> dans la translation, puis dans le point visé par la caméra</td></tr>
+          <tr><td>Ajouter un second cube</td><td>une seconde instance dans <code>Scene.__init__()</code>, avec sa propre translation</td></tr>
+          <tr><td>Changer la lumière</td><td><code>self.shading.direction</code>, un <code>Vec3</code> de la scène</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Deux exercices pour finir. Premier exercice : placer le cube à <code>x = 40</code> et décaler le point visé par la caméra de la même valeur, pour qu’il reste au centre de l’image. Deuxième exercice : ajouter un second cube de couleur différente, plus petit, posé à gauche du premier ; les deux nœuds partagent la même caméra, puisque celle-ci appartient à la scène.</p>
+
+    <aside class="callout callout-tip">
+      <p class="callout-title">Une constante par réglage</p>
+      <p>Déplacer une valeur dans une constante nommée coûte une ligne et évite de fouiller le fichier. C’est la même discipline que dans le parcours 2D, et elle devient plus utile encore en 3D, où les nombres sont moins parlants.</p>
+    </aside>
+
+    <h2 id="a-retenir">À retenir</h2>
+    <ul>
+      <li>Pyxel Cube s’importe depuis <code>pyxel.cube</code> et demande Pyxel 3.0 ou plus.</li>
+      <li>Une scène est un nœud : ses enfants sont les objets, la caméra et la lumière sont sur la racine.</li>
+      <li><code>on_update()</code> et <code>on_draw()</code> sont appelées par <code>update()</code> et <code>draw()</code> de la racine, jamais directement.</li>
+      <li><code>Mat4.look_at()</code> place la caméra, <code>Mat4.from_translation()</code> et <code>Mat4.from_euler()</code> placent et orientent un objet.</li>
+      <li>Un objet posé sur un sol de hauteur <code>y = 0</code> a son centre à la moitié de sa hauteur.</li>
+      <li>L’ordre translation puis rotation garde un objet sur place ; l’ordre inverse le fait tourner autour du monde.</li>
+      <li>Trois appels font vivre la scène : la caméra, <code>scene.update()</code>, <code>scene.draw()</code>.</li>
+    </ul>
+
+    <p>Le chapitre suivant en fait une scène peuplée : un objet parent qui entraîne ses enfants, des transformations qui s’additionnent, et une caméra que le clavier fait tourner.</p>
+
+  </article>
+</body>
+</html>

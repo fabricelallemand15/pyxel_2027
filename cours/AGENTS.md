@@ -60,9 +60,9 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 9 — Animation et caméra | `09-animation-et-camera/` | produite |
 | 10 — Audio, interface, états | `10-audio-et-scenes/` | produite |
 | 11 — Préparation Nuit du Code | `11-nuit-du-code/` | produite |
-| Bonus — Pyxel Cube | `bonus-cube/` | à produire |
+| Bonus — Pyxel Cube (3 chapitres) | `bonus-cube/` | produite |
 
-Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.html`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute.
+Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.html`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute. Le module bonus fait exception : ses trois chapitres ne chargent aucune ressource, donc aucun fichier `res.pyxres` ne les accompagne.
 
 ## 5. Arborescence et nommage
 
@@ -85,6 +85,19 @@ cours/
       main.py
       res.pyxres
     ...
+    bonus-cube/
+      01-premiere-scene/
+        article.html
+        script-video.md
+        main.py
+      02-transformations/
+        article.html
+        script-video.md
+        main.py
+      03-petit-jeu-3d/
+        article.html
+        script-video.md
+        main.py
 ```
 
 Règles :
@@ -92,6 +105,7 @@ Règles :
 - nom de dossier de leçon : `NN-nom-court`, numéro sur deux chiffres, mots en minuscules séparés par des tirets ;
 - un dossier de leçon est autonome : on doit pouvoir copier `main.py` et `res.pyxres` dans PyxelStudio sans rien chercher ailleurs ;
 - `res.pyxres` est généré dans `outils/`, puis recopié à l’identique dans chaque dossier de leçon qui l’utilise ;
+- les chapitres du module bonus suivent la même règle de nommage (`NN-nom-court`) et ne contiennent aucun fichier de ressources ;
 - aucun fichier généré inutile (`__pycache__`, archives temporaires) ne doit être commité.
 
 ## 6. Contenu attendu d’une leçon
@@ -299,6 +313,23 @@ Toute nouvelle valeur de ce type doit être ajoutée à ce tableau.
 - La difficulté se règle par `PLAYER_SPEED`, `JUMP_SPEED`, `GRAVITY` et `ENEMY_SPEED` ; toute modification se valide par une partie complète.
 - L'article de la leçon 11 termine la formation et renvoie au module bonus.
 
+### 7.12. Module bonus Pyxel Cube
+
+- Pyxel Cube impose sa structure : les objets sont des sous-classes de `Node`, les comportements vont dans `on_update()` et `on_draw()`, et l’arbre est parcouru par `update()` et `draw()` de la racine. Les conventions `Game.update()` / `Game.draw()` du parcours 2D ne s’y appliquent pas.
+- Les cinq classes utiles s’importent par `from pyxel.cube import Camera, Mat4, Node, Shading, Vec3`. Le module exige Pyxel 3.0 ou plus.
+- Une scène est une sous-classe de `Node` créée dans un `App` ; elle porte la lumière (`self.shading = Shading(pyxel.colors)`), la caméra (`self.camera = Camera()`) et ses enfants, ajoutés par `self.add_child(...)`.
+- La caméra se place sur la scène, jamais sur l’objet observé : `self.camera.transform = Mat4.look_at(eye, target)`. Son `clear_color` remplit la fenêtre avant le dessin.
+- Une boîte se dessine avec `self.box(Mat4.IDENTITY, Vec3(w, h, d), couleur)` : le placement est relatif au nœud, donc `Mat4.IDENTITY` quand l’objet est déjà transformé.
+- Un objet posé sur un sol à `y = 0` a son centre à la moitié de sa hauteur.
+- Une rotation se compose toujours dans l’ordre translation `*` rotation : `Mat4.from_translation(...) * Mat4.from_euler(...)`.
+- `transform` est locale, relative au parent ; un parent qui tourne entraîne ses enfants sans code pour eux.
+- `pyxel.cos()` et `pyxel.sin()` attendent des degrés, contrairement à ceux du module `math`.
+- `pyxel.clamp()` borne un déplacement, une hauteur de caméra ou une arène.
+- `active = False` fige un nœud et ses descendants sans les faire disparaître ; `remove_child()` retire un nœud de l’arbre.
+- Le module bonus n’utilise aucune ressource externe : les formes viennent des primitives de `Node` (`box`, `sphere`, `plane`, `boxb`…) et aucun fichier `.glb` n’est chargé. `Collider`, `Mesh.from_glb()` et Blockbench sont présentés en fin de parcours, pas pratiqués.
+- Une scène 3D ne se rend pas sans OpenGL : la validation se fait par un stub de `pyxel` et de `pyxel.cube` qui rejoue les programmes et contrôle positions, transformations, caméra, score et textes, plus une relecture de `docs/api-reference-cube.md`.
+- Le HUD reste en 2D, dessiné après `scene.draw()` : `pyxel.text()` et `pyxel.rect()`, colonnes calculées par `text_x()`, aucune chaîne accentuée.
+
 ## 8. Conventions des ressources
 
 ### 8.1. Génération
@@ -481,9 +512,9 @@ Règles :
 ## 12. Procédure de production d’une leçon
 
 1. Relire la section de la leçon dans `docs/plan-formation-pyxel.md`.
-2. Vérifier les signatures utilisées dans `docs/api-reference.md`.
+2. Vérifier les signatures utilisées dans `docs/api-reference.md`, ou `docs/api-reference-cube.md` pour le module bonus.
 3. Partir du `main.py` de la leçon précédente et n’ajouter que les changements annoncés.
-4. Mettre à jour `res.pyxres` par le script de génération si la leçon ajoute des ressources, puis recopier le fichier dans le dossier.
+4. Mettre à jour `res.pyxres` par le script de génération si la leçon ajoute des ressources, puis recopier le fichier dans le dossier. Le module bonus n’a pas d’étape 4 : ses chapitres ne chargent aucune ressource.
 5. Écrire `main.py`, puis vérifier qu’il se compile et respecte les conventions de la section 7.
 6. Écrire `article.html` en réutilisant `styles/article.css`.
 7. Écrire `script-video.md`.
@@ -501,6 +532,8 @@ python cours/pyxel-platformer/outils/generer_ressources.py
 cmp cours/pyxel-platformer/outils/res.pyxres cours/pyxel-platformer/NN-lecon/res.pyxres
 ```
 
+Pour le module bonus, l’étape 2 ne s’applique pas : il n’y a pas de `res.pyxres`. La place est prise par un test de logique qui rejoue chaque `main.py` sur un stub de `pyxel` et de `pyxel.cube`, et qui contrôle les positions, les transformations, la caméra, le score et les textes affichés.
+
 Vérifier également, par lecture ou par script :
 
 - le code de l’article est identique à `main.py` ;
@@ -509,7 +542,7 @@ Vérifier également, par lecture ou par script :
 - le script vidéo décrit le même code que l’article ;
 - la fenêtre mesure 256 × 256 et le niveau 64 × 32 tuiles ;
 - les textes passés à `pyxel.text()` ne contiennent que des caractères ASCII ;
-- le dossier d'une leçon ne contient que `main.py`, `res.pyxres`, `article.html` et `script-video.md` ;
+- le dossier d'une leçon ne contient que `main.py`, `res.pyxres`, `article.html` et `script-video.md` ; un chapitre du module bonus ne contient que `main.py`, `article.html` et `script-video.md` ;
 - aucun fichier généré inutile n’est ajouté au dépôt.
 
 Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’indiquer explicitement et limiter la validation à ce qui est vérifiable.
@@ -525,6 +558,8 @@ Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’i
 - Introduire des décorateurs, des annotations de type ou des constructions Python avancées.
 - Ajouter une évaluation, une note ou un barème.
 - Reprendre l’architecture des exemples officiels de Pyxel : certains n’attribuent pas de méthode `draw()` à chaque élément.
+- Réimposer `Game.update()` / `Game.draw()` au module bonus : Pyxel Cube utilise `on_update()` / `on_draw()` sur des nœuds.
+- Charger un fichier `.glb`, une image ou une police dans les chapitres du module bonus.
 - Produire une leçon sans son code exécutable et vérifié.
 
 ## 15. Quand une règle change
