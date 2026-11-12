@@ -997,6 +997,10 @@ Pyxel Cube utilise une organisation différente de la POO 2D simplifiée :
 
 Cette différence sera explicitement signalée. Les règles `update()` et `draw()` du parcours 2D ne seront pas artificiellement imposées à l'API Cube.
 
+Les trois chapitres sont produits dans `cours/pyxel-platformer/bonus-cube/`, un sous-dossier par chapitre, sur le modèle des leçons 2D. Chaque chapitre ne contient que trois fichiers : `main.py`, `article.html` et `script-video.md`. Aucun fichier de ressources n'est nécessaire, puisque toutes les formes sont dessinées par le code.
+
+Une limite de production est à connaître : Pyxel Cube s'exécute mais ne se rend pas sans OpenGL. Le rendu n'a donc pas pu être vérifié visuellement comme pour les leçons 2D. La validation a porté sur la logique : un stub de `pyxel` et de `pyxel.cube` rejoue les trois programmes, contrôle les positions, les transformations, la caméra, le score et les textes du HUD, et les signatures employées ont été relues dans `docs/api-reference-cube.md`.
+
 ## Cube 1 — Première scène 3D
 
 ### Objectifs
@@ -1018,6 +1022,17 @@ from pyxel.cube import Camera, Mat4, Node, Shading, Vec3
 
 La première scène utilisera uniquement des formes primitives générées par le code. Aucun fichier `.glb` ne sera nécessaire.
 
+### Mise en œuvre retenue
+
+- dossier `bonus-cube/01-premiere-scene/` ; fenêtre 256 × 256, titre ASCII `Cube 1 - scene 3D` ;
+- quatre classes : `Ground(Node)` et `Cube(Node)` pour les objets, `Scene(Node)` pour la racine, `App` pour la fenêtre et la boucle ;
+- les objets ne redéfinissent que `on_update()` et `on_draw()` ; `App` appelle `scene.update()` puis `scene.draw(0, 0, pyxel.width, pyxel.height)` ;
+- le sol est une boîte de `200 × 2 × 200` placée à `y = -1`, le cube une boîte de 32 de côté centrée à `y = 16` : les deux se touchent à `y = 0` ;
+- la scène porte la lumière (`Shading(pyxel.colors)`) et la caméra (`Mat4.look_at(Vec3(0, 60, 140), Vec3(0, 16, 0))`, `clear_color` noir) ;
+- la rotation du cube vaut `Mat4.from_translation(...) * Mat4.from_euler(Vec3(0, frame_count * 1.0, 0))`, soit un tour en douze secondes à trente images par seconde ;
+- les couleurs sont nommées (`pyxel.COLOR_GREEN`, `pyxel.COLOR_CYAN`) ;
+- l'article explique le repère (`x` à droite, `y` en haut, `z` vers le spectateur), le rôle de `on_draw()` et les trois appels qui font vivre la scène.
+
 ## Cube 2 — Objets, scène et transformations
 
 ### Objectifs
@@ -1038,6 +1053,18 @@ La première scène utilisera uniquement des formes primitives générées par l
 - transformation ;
 - arbre de scène.
 
+### Mise en œuvre retenue
+
+- dossier `bonus-cube/02-transformations/` ;
+- arbre : `Scene` contient `Ground` et un `Mobile`, qui contient quatre `Cube` ; la caméra reste sur la scène ;
+- les cubes enfants sont placés sur un cercle de rayon 36 avec `pyxel.cos(angle) * CUBE_RADIUS` et `pyxel.sin(angle) * CUBE_RADIUS`, les angles étant répartis par `index * 360.0 / count` ;
+- la transformation des enfants est locale : seul le `Mobile` connaît `MOBILE_HEIGHT = 40.0` et la rotation, ce qui montre la composition des niveaux ;
+- le mobile tourne à 1,5 degré par image, soit un tour en huit secondes ;
+- la caméra est orbitale : `yaw` et `height` sont deux attributs de `Scene`, l'œil se place à `(sin(yaw) * 160, height, cos(yaw) * 160)` et vise le centre du mobile ;
+- les flèches gauche et droite changent `yaw`, les flèches haut et bas `height`, bornée entre 20 et 150 par `pyxel.clamp()` ;
+- `update_camera()` regroupe le calcul de la position de l'œil, appelée une fois à la construction puis à chaque image ;
+- l'article insiste sur `world_transform`, sur les degrés attendus par `pyxel.sin()` et `pyxel.cos()`, et sur l'erreur du `add_child()` oublié.
+
 ## Cube 3 — Vers un petit jeu 3D
 
 ### Objectifs possibles
@@ -1051,6 +1078,20 @@ La première scène utilisera uniquement des formes primitives générées par l
 - ouverture vers Blockbench.
 
 Les quaternions, les meshes complexes, les animations importées et la physique complète seront réservés à des fiches avancées éventuelles.
+
+### Mise en œuvre retenue
+
+- dossier `bonus-cube/03-petit-jeu-3d/` ; fenêtre 256 × 256, titre ASCII `Cube 3 - petit jeu 3D` ;
+- trois classes d'objets (`Ground`, `Player`, `Gem`) et une scène qui porte les règles, comme la classe `Game` du parcours 2D ;
+- le joueur garde un `Vec3` de position, source de vérité, et une transformation recalculée par `Mat4.from_translation()` à chaque image ;
+- déplacement aux quatre flèches, à deux unités par image, borné à 80 unités du centre par `pyxel.clamp()` alors que le sol mesure 200 unités ;
+- six gemmes placées par `GEM_POSITIONS`, chacune tournant sur elle-même ; le ramassage compare `player.position.distance_to(gem.position)` à `GEM_RADIUS = 14` ;
+- une gemme ramassée garde sa place dans l'arbre et cesse seulement d'être dessinée, ce qui évite de modifier l'arbre pendant sa mise à jour ;
+- la victoire (`score == len(self.gems)`) passe `self.is_won` à vrai et `self.player.active` à faux ; `active` fige le nœud sans le faire disparaître ;
+- `start_game()` retire les anciennes gemmes avec `remove_child()`, recrée les six, replace et réactive le joueur, remet le score et l'état à zéro ; la barre d'espace l'appelle depuis l'écran de victoire ;
+- la caméra suit le joueur : œil à `+70` en hauteur et `+90` en profondeur, point visé sur le joueur, calcul effectué dans `App.draw()` avant `scene.draw()` pour éviter une image de retard ;
+- le HUD est en 2D : score en haut à gauche, panneau de victoire `rect(48, 96, 160, 48)` et trois textes centrés par `text_x()` avec une police ASCII de 4 pixels ;
+- `Collider`, `Mesh.from_glb()` et Blockbench sont présentés dans une section « Aller plus loin », sans être utilisés : ils ajoutent des fichiers et de la physique, hors du périmètre d'un projet livrable en un fichier.
 
 ---
 
@@ -1184,7 +1225,18 @@ cours/
       res.pyxres
     ...
     bonus-cube/
-      ...
+      01-premiere-scene/
+        article.html
+        script-video.md
+        main.py
+      02-transformations/
+        article.html
+        script-video.md
+        main.py
+      03-petit-jeu-3d/
+        article.html
+        script-video.md
+        main.py
 ```
 
 Règles appliquées :
@@ -1194,6 +1246,7 @@ Règles appliquées :
 - `script-video.md` contient le script de la vidéo ;
 - le fichier de ressources de référence est généré dans `outils/`, puis copié dans le dossier de la leçon ;
 - les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante ;
+- les trois chapitres du module bonus ne contiennent que `main.py`, `article.html` et `script-video.md` : aucune ressource externe n'y est chargée.
 - les consignes de production, les conventions de code et les vérifications à exécuter sont décrites dans `cours/AGENTS.md`.
 
 ---
