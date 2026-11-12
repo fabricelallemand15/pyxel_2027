@@ -1,0 +1,706 @@
+---
+description: "Vérifier le jeu, le rendre autonome dans un dossier de deux fichiers, calculer les colonnes de texte et préparer la personnalisation du projet"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon 11
+:::
+
+# Préparer son jeu pour la Nuit du Code
+
+::: {.lesson-subtitle}
+Vérifier le jeu, le rendre autonome dans un dossier de deux fichiers, et préparer sa personnalisation
+:::
+
+:::
+
+## Présentation {#presentation}
+
+Le jeu est complet depuis la leçon 10 : quatre états, un écran titre, deux fins possibles, une musique et trois bruitages. Il ne manque plus qu’une chose, et c’est celle qui compte le jour du rendu : vérifier qu’il fonctionne ailleurs que dans le dossier où il a été écrit.
+
+Cette dernière leçon ne change pas les règles du jeu. Elle poursuit trois buts.
+
+- Passer le jeu en revue avec une liste de vérification, point par point.
+- Corriger deux fragilités qui gênent la personnalisation : les colonnes de texte écrites à la main, et les deux écrans de fin presque identiques.
+- Préparer le travail de personnalisation, en sachant où intervenir pour chaque idée.
+
+Le résultat est le même jeu qu’à la leçon 10, avec un dossier autonome et un code plus facile à modifier.
+
+## Objectifs {#objectifs}
+
+À la fin de la leçon, vous devez pouvoir :
+
+1. vérifier le fonctionnement complet du jeu ;
+2. contrôler la présence des deux fichiers attendus ;
+3. supprimer toute dépendance externe ;
+4. vérifier le chargement de `res.pyxres` ;
+5. équilibrer la difficulté ;
+6. ajouter une condition de victoire claire ;
+7. rendre le jeu rejouable ;
+8. personnaliser le niveau et les ressources.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Leçon 10 | Leçon 11 |
+| --- | --- | --- |
+| Colonne d’un texte centré | écrite à la main | calculée par `text_x()` |
+| Écran titre | quatre appels à `pyxel.text()` | une liste de lignes et une boucle |
+| Écrans de fin | deux méthodes presque identiques | un seul `draw_end()` |
+| Score final | colonne fixe, réglée pour deux chiffres | colonne calculée, quel que soit le score |
+| Titre de la fenêtre | `Chapitre 10 - interface` | `Chapitre 11 - version finale` |
+| Dossier du projet | deux fichiers | deux fichiers, vérifiés dans un dossier neuf |
+
+::: {.callout-note title="Un jeu, pas une démonstration"}
+
+La différence entre un programme qui marche et un jeu livrable tient à des détails : un fichier oublié, un texte qui se décale quand on le renomme, un son joué au mauvais moment. Cette leçon s’occupe de ces détails, pas des règles.
+
+:::
+
+## Le code complet {#le-code-complet}
+
+```python
+import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+FONT_WIDTH = 4
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 64
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+]
+COIN_TILE = (3, 1)
+ENEMY_TILE = (4, 0)
+EMPTY_TILE = (5, 5)
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_IDLE_TILE = (0, 0)
+PLAYER_JUMP_TILE = (1, 0)
+PLAYER_WALK_TILES = [
+    (2, 0),
+    (3, 0),
+]
+ANIMATION_SPEED = 6
+PLAYER_START_X = 8
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+ENEMY_SPEED = 1
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+COIN_SOUND = 1
+HIT_SOUND = 2
+
+SCENE_TITLE = 0
+SCENE_PLAY = 1
+SCENE_GAMEOVER = 2
+SCENE_WIN = 3
+
+
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.is_alive = True
+
+    def update(self):
+        pass
+
+    def draw(self):
+        tile_x, tile_y = COIN_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Enemy:
+    def __init__(self, x, y, min_x, max_x):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.dx = ENEMY_SPEED
+        self.min_x = min_x
+        self.max_x = max_x
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x < self.min_x:
+            self.x = self.min_x
+            self.dx = ENEMY_SPEED
+        elif self.x > self.max_x:
+            self.x = self.max_x
+            self.dx = -ENEMY_SPEED
+
+    def draw(self):
+        tile_x, tile_y = ENEMY_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+    def move_player(self, x, y, dx, dy):
+        return self.tilemap.collide(
+            x,
+            y,
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT,
+            dx,
+            dy,
+            SOLID_TILES,
+        )
+
+    def take_coins(self):
+        positions = []
+
+        for tile_y in range(LEVEL_HEIGHT):
+            for tile_x in range(LEVEL_WIDTH):
+                if self.tilemap.pget(tile_x, tile_y) == COIN_TILE:
+                    self.tilemap.pset(tile_x, tile_y, EMPTY_TILE)
+                    positions.append(
+                        (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
+                    )
+
+        return positions
+
+
+class Player:
+    def __init__(self, x, y, level):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+        self.is_facing_right = True
+        self.tile = PLAYER_IDLE_TILE
+        self.level = level
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+            self.is_facing_right = False
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+            self.is_facing_right = True
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+
+        was_falling = self.dy > 0
+        self.dx, self.dy = self.level.move_player(
+            self.x,
+            self.y,
+            self.dx,
+            self.dy,
+        )
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            self.level.width - self.width,
+        )
+        self.y += self.dy
+
+        self.is_on_ground = was_falling and self.dy == 0
+        self.choose_tile()
+
+    def draw(self):
+        tile_x, tile_y = self.tile
+
+        if self.is_facing_right:
+            width = self.width
+        else:
+            width = -self.width
+
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+    def choose_tile(self):
+        if not self.is_on_ground:
+            self.tile = PLAYER_JUMP_TILE
+        elif self.dx != 0:
+            index = pyxel.frame_count // ANIMATION_SPEED % 2
+            self.tile = PLAYER_WALK_TILES[index]
+        else:
+            self.tile = PLAYER_IDLE_TILE
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Chapitre 11 - version finale",
+        )
+
+        self.scene = SCENE_TITLE
+        self.score = 0
+
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        if self.scene == SCENE_TITLE:
+            self.update_title()
+        elif self.scene == SCENE_PLAY:
+            self.update_play()
+        elif self.scene == SCENE_GAMEOVER:
+            self.update_gameover()
+        else:
+            self.update_win()
+
+    def draw(self):
+        if self.scene == SCENE_TITLE:
+            self.draw_title()
+        elif self.scene == SCENE_PLAY:
+            self.draw_play()
+        elif self.scene == SCENE_GAMEOVER:
+            self.draw_gameover()
+        else:
+            self.draw_win()
+
+    def update_title(self):
+        if pyxel.btnp(pyxel.KEY_SPACE):
+            self.start_game()
+
+    def update_play(self):
+        self.player.update()
+
+        for coin in self.coins:
+            coin.update()
+
+        for enemy in self.enemies:
+            enemy.update()
+
+        self.check_coins()
+
+        if not self.coins:
+            self.scene = SCENE_WIN
+            pyxel.stop()
+            return
+
+        self.check_enemies()
+
+    def update_gameover(self):
+        if pyxel.btnp(pyxel.KEY_SPACE):
+            self.scene = SCENE_TITLE
+
+    def update_win(self):
+        if pyxel.btnp(pyxel.KEY_SPACE):
+            self.scene = SCENE_TITLE
+
+    def draw_title(self):
+        pyxel.cls(BACKGROUND_COLOR)
+
+        lines = [
+            ("MINI PLATFORMER", 96),
+            ("Gauche et droite : marcher", 120),
+            ("Espace : sauter", 136),
+            ("Appuyez sur Espace", 160),
+        ]
+
+        for text, y in lines:
+            pyxel.text(self.text_x(text), y, text, TEXT_COLOR)
+
+    def draw_play(self):
+        pyxel.cls(BACKGROUND_COLOR)
+
+        camera_x = pyxel.clamp(
+            self.player.x + self.player.width // 2 - pyxel.width // 2,
+            0,
+            self.level.width - pyxel.width,
+        )
+        pyxel.camera(camera_x, 0)
+
+        self.level.draw()
+
+        for coin in self.coins:
+            coin.draw()
+
+        for enemy in self.enemies:
+            enemy.draw()
+
+        self.player.draw()
+
+        pyxel.camera()
+
+        pyxel.text(4, 4, f"Score : {self.score}", TEXT_COLOR)
+        pyxel.text(4, 12, f"Restantes : {len(self.coins)}", TEXT_COLOR)
+
+    def draw_gameover(self):
+        self.draw_play()
+        self.draw_end("Partie perdue", pyxel.COLOR_RED)
+
+    def draw_win(self):
+        self.draw_play()
+        self.draw_end("Victoire", pyxel.COLOR_YELLOW)
+
+    def draw_end(self, message, color):
+        pyxel.rect(48, 92, 160, 60, pyxel.COLOR_BLACK)
+
+        score = f"Score : {self.score}"
+        hint = "Espace : revenir au titre"
+
+        pyxel.text(self.text_x(message), 104, message, color)
+        pyxel.text(self.text_x(score), 116, score, TEXT_COLOR)
+        pyxel.text(self.text_x(hint), 136, hint, TEXT_COLOR)
+
+    def text_x(self, text):
+        return (SCREEN_WIDTH - FONT_WIDTH * len(text)) // 2
+
+    def start_game(self):
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+            self.level,
+        )
+
+        self.coins = []
+        for x, y in self.level.take_coins():
+            self.coins.append(Coin(x, y))
+
+        self.enemies = [
+            Enemy(88, 216, 88, 160),
+            Enemy(104, 144, 104, 160),
+            Enemy(320, 216, 288, 440),
+        ]
+
+        self.score = 0
+        self.scene = SCENE_PLAY
+
+        pyxel.playm(MUSIC, loop=True)
+
+    def collide(self, a, b):
+        return (
+            a.x < b.x + b.width
+            and a.x + a.width > b.x
+            and a.y < b.y + b.height
+            and a.y + a.height > b.y
+        )
+
+    def check_coins(self):
+        for coin in self.coins:
+            if self.collide(self.player, coin):
+                coin.is_alive = False
+                self.score += 1
+                pyxel.play(1, COIN_SOUND)
+
+        self.coins = [coin for coin in self.coins if coin.is_alive]
+
+    def check_enemies(self):
+        for enemy in self.enemies:
+            if self.collide(self.player, enemy):
+                self.scene = SCENE_GAMEOVER
+                pyxel.stop()
+                pyxel.play(2, HIT_SOUND)
+
+
+Game()
+```
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Une colonne calculée
+
+```python
+    def text_x(self, text):
+        return (SCREEN_WIDTH - FONT_WIDTH * len(text)) // 2
+```
+
+La leçon 10 calculait les colonnes à la main, une fois pour toutes, et les écrivait dans le code. Le résultat était juste, mais fragile : renommer « MINI PLATFORMER » ou passer d’un score à deux chiffres décalait le texte.
+
+La méthode `text_x()` refait le calcul à chaque dessin, à partir de la longueur réelle du texte. `FONT_WIDTH` vaut 4, la largeur d’un caractère dans la police de Pyxel. La méthode renvoie la colonne où commencer pour que le texte soit centré.
+
+Les appels deviennent plus courts, et le renommage ne casse plus rien : la colonne suit le texte.
+
+| Texte | Caractères | Colonne calculée |
+| --- | --- | --- |
+| `MINI PLATFORMER` | 15 | `98` |
+| `Gauche et droite : marcher` | 26 | `76` |
+| `Victoire` | 8 | `112` |
+| `Score : 0` | 9 | `110` |
+| `Score : 18` | 10 | `108` |
+| `Espace : revenir au titre` | 25 | `78` |
+
+Le score final se décale de deux pixels entre neuf et dix points. C’est le prix d’un centrage exact, et cela ne se voit pas : le texte reste au milieu du cadre noir.
+
+### L’écran titre en une liste
+
+```python
+        lines = [
+            ("MINI PLATFORMER", 96),
+            ("Gauche et droite : marcher", 120),
+            ("Espace : sauter", 136),
+            ("Appuyez sur Espace", 160),
+        ]
+
+        for text, y in lines:
+            pyxel.text(self.text_x(text), y, text, TEXT_COLOR)
+```
+
+Chaque ligne de l’écran titre est un couple : le texte, puis sa hauteur. La boucle dessine les quatre lignes de la même façon.
+
+Pour ajouter une ligne, il suffit d’un couple de plus dans la liste. Pour changer l’ordre, on déplace une ligne. Aucun appel à `pyxel.text()` ne se répète dans le code.
+
+Le parcours d’une liste de couples a déjà servi pour les positions des pièces, avec `for x, y in self.level.take_coins()`.
+
+### Un seul dessin de fin
+
+```python
+    def draw_gameover(self):
+        self.draw_play()
+        self.draw_end("Partie perdue", pyxel.COLOR_RED)
+
+    def draw_win(self):
+        self.draw_play()
+        self.draw_end("Victoire", pyxel.COLOR_YELLOW)
+
+    def draw_end(self, message, color):
+        pyxel.rect(48, 92, 160, 60, pyxel.COLOR_BLACK)
+
+        score = f"Score : {self.score}"
+        hint = "Espace : revenir au titre"
+
+        pyxel.text(self.text_x(message), 104, message, color)
+        pyxel.text(self.text_x(score), 116, score, TEXT_COLOR)
+        pyxel.text(self.text_x(hint), 136, hint, TEXT_COLOR)
+```
+
+Les deux écrans de fin ne différaient que par deux valeurs : le message et sa couleur. Elles deviennent les deux paramètres de `draw_end()`.
+
+L’intérêt n’est pas d’écrire moins de lignes, mais de n’avoir qu’un endroit à modifier. Changer la taille du cadre, déplacer le score ou reformuler la consigne se fait une fois, et les deux écrans suivent.
+
+### Le bruitage de la collision
+
+```python
+                self.scene = SCENE_GAMEOVER
+                pyxel.stop()
+                pyxel.play(2, HIT_SOUND)
+```
+
+L’ordre des deux appels est imposé par Pyxel : `pyxel.stop()` coupe tous les canaux, y compris celui du bruitage. Le son est donc joué après l’arrêt de la musique, sinon il serait interrompu dans la même image.
+
+Le canal 2 est libre : la musique occupe les canaux 0 et 1, le saut le canal 0 et la pièce le canal 1. Un bruitage peut ainsi se superposer à la musique sans la remplacer.
+
+### Deux fichiers, un dossier
+
+Le dossier du projet contient exactement deux fichiers :
+
+```text
+mon-jeu/
+  main.py
+  res.pyxres
+```
+
+Le programme ne connaît que le nom `res.pyxres`, sans chemin : il le cherche dans le dossier courant. Le dossier peut donc être renommé, déplacé, envoyé ou déposé dans Capytale, tant que les deux fichiers restent ensemble.
+
+La vérification décisive est simple : copier le dossier ailleurs, sous un autre nom, puis lancer le jeu depuis ce nouvel emplacement. Beaucoup d’erreurs de rendu viennent d’un fichier resté dans l’ancien dossier.
+
+Ce dossier ne contient aucun autre fichier indispensable : pas de second fichier Python, pas d’image PNG, pas de son WAV, pas de police, pas de fichier de niveau séparé. Tout ce qui n’est pas du code est dans `res.pyxres`.
+
+### La liste de vérification
+
+Les quinze points suivants se contrôlent en jouant, pas en relisant le code.
+
+| Point | Comment le vérifier |
+| --- | --- |
+| Le jeu se lance sans erreur | Relancer depuis le dossier neuf |
+| `main.py` est le seul fichier Python | Compter les fichiers du dossier |
+| `res.pyxres` est la seule ressource | Même contrôle |
+| Les deux fichiers suffisent | Copier le dossier, renommer, relancer |
+| Le joueur se déplace | Maintenir la flèche gauche puis la flèche droite |
+| Le joueur saute | Barre d’espace au sol, puis en l’air |
+| Les collisions fonctionnent | Sauter sous une plateforme, marcher contre un mur |
+| Les ennemis ont un comportement visible | Observer les allées et retours |
+| Les pièces se ramassent | Passer sur trois pièces |
+| Le score est mis à jour | Lire la première ligne du compteur |
+| Les bruitages sont associés aux événements | Sauter, prendre une pièce, toucher un ennemi |
+| La musique peut être arrêtée | Terminer une partie : le silence revient |
+| Une victoire est possible | Ramasser les dix-huit pièces |
+| Une défaite est possible | Toucher un ennemi |
+| Une nouvelle partie peut être lancée | Revenir au titre, puis appuyer sur espace |
+
+### Équilibrer la difficulté
+
+Quatre constantes suffisent à régler la difficulté. Elles se trouvent toutes dans le bloc de constantes, en haut du fichier, et rien d’autre n’en dépend.
+
+| Constante | Valeur | Si on augmente la valeur |
+| --- | --- | --- |
+| `PLAYER_SPEED` | `2` | Le joueur traverse le niveau plus vite |
+| `JUMP_SPEED` | `-11` | Le saut est plus court, car la valeur monte vers zéro |
+| `GRAVITY` | `1` | La chute est plus rapide et le saut plus sec |
+| `ENEMY_SPEED` | `1` | Les ennemis vont plus vite |
+
+Deux valeurs se touchent : le saut et la gravité. Avec `JUMP_SPEED = -11` et `GRAVITY = 1`, le joueur monte d’environ 55 pixels, en ajoutant les vitesses image après image. Avec `-9`, il ne monte plus que de 36 pixels : la première rangée de plateformes, à 40 pixels au-dessus du sol, devient inaccessible.
+
+Après chaque changement, une partie complète suffit à juger. Le niveau se parcourt jusqu’à la dernière pièce.
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+| Point à vérifier | Résultat attendu |
+| --- | --- |
+| Au lancement | Écran titre centré, sans musique |
+| Titre de la fenêtre | `Chapitre 11 - version finale` |
+| Barre d’espace sur le titre | Partie lancée, musique en boucle |
+| Interface | `Score : 0` et `Restantes : 18`, fixes pendant le défilement |
+| Fin de partie | `Victoire` ou `Partie perdue`, message centré dans le cadre noir |
+| Score final | Centré, à un comme à deux chiffres |
+| Bruitage de défaite | Audible après l’arrêt de la musique |
+| Nouvelle partie | Dix-huit pièces, score à zéro |
+| Dossier copié ailleurs | Le jeu démarre à l’identique |
+| Fichiers du dossier | Deux fichiers, aucun autre |
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+::: {.callout-warning title="Le fichier de ressources est introuvable"}
+
+Le message `Failed to open file ’res.pyxres’` apparaît quand le programme est lancé depuis un autre dossier, ou quand le fichier a été renommé. `pyxel.load()` reçoit un nom, pas un chemin : le fichier doit se trouver à côté de `main.py`, et le jeu doit être lancé depuis ce dossier.
+
+:::
+
+::: {.callout-warning title="Un fichier oublié dans l’ancien dossier"}
+
+Un jeu qui fonctionne dans son dossier d’origine et échoue une fois copié signale une dépendance externe : un second fichier Python importé, une image, un son ou une police. Le dossier de rendu ne contient que `main.py` et `res.pyxres`.
+
+:::
+
+::: {.callout-warning title="Un texte décalé après un renommage"}
+
+Les colonnes écrites à la main ne suivent pas le texte : renommer « MINI PLATFORMER » décale la ligne. `text_x()` évite ce problème ; si une colonne reste écrite en dur quelque part, c’est une erreur à corriger.
+
+:::
+
+::: {.callout-warning title="Un bruitage inaudible"}
+
+Un son joué avant `pyxel.stop()` est coupé aussitôt. À la défaite, l’ordre est toujours : arrêt de la musique, puis bruitage.
+
+:::
+
+::: {.callout-warning title="Les accents et la cédille"}
+
+La police intégrée ne dessine que l’ASCII : un texte accentué perd ses lettres. Les messages de l’interface restent donc écrits sans accent, comme dans les leçons précédentes.
+
+:::
+
+::: {.callout-warning title="Une partie qui repart vide"}
+
+Sans `pyxel.load()` au début de `start_game()`, la deuxième partie n’a plus de pièce : `take_coins()` a effacé les tuiles du décor. Le rechargement fait partie de la liste de vérification : une seconde partie doit être jouable.
+
+:::
+
+## Personnaliser le jeu {#experimentations}
+
+Le jeu de référence n’est pas un modèle à livrer tel quel. Il sert de point de départ. Chaque idée ci-dessous indique où intervenir ; les leçons précédentes contiennent le détail des mécanismes.
+
+| Idée | Où intervenir |
+| --- | --- |
+| Modifier le niveau | Éditeur de tilemap de PyxelStudio, puis enregistrer `res.pyxres` |
+| Ajouter une plateforme | Tilemap, ou `pset()` dans `take_coins()` comme vu en leçon 7 |
+| Ajouter un ennemi | Liste des ennemis dans `start_game()`, avec ses deux bornes |
+| Ajouter une pièce spéciale | Nouvelle classe sur le modèle de `Coin`, avec une autre tuile |
+| Ajouter des vies | `self.lives` dans `Game`, décrémenté dans `check_enemies()` |
+| Ajouter un compte à rebours | `pyxel.frame_count` divisé par trente, comparé à une limite dans `update_play()` |
+| Créer une zone secrète | Tuile traversable, ou téléportation quand le joueur entre dans une zone |
+| Ajouter un bonus temporaire | Attribut de `Player` et compteur d’images dans `update()` |
+| Créer une nouvelle animation | Nouvelles tuiles dans la banque d’images, puis `choose_tile()` |
+| Modifier l’ambiance sonore | Éditeur de sons et de musiques de PyxelStudio |
+
+Une recommandation de méthode : garder une copie du dossier de référence avant de commencer. Le jour du rendu, il vaut mieux un jeu simple qui fonctionne qu’un jeu ambitieux qui ne démarre pas.
+
+::: {.callout-tip title="Deux extensions suffisent"}
+
+Choisir deux idées et les mener jusqu’au bout vaut mieux que dix idées à moitié faites. Une modification terminée se voit en jouant ; une modification inachevée se voit dans le code, et souvent au mauvais moment.
+
+:::
+
+## À retenir {#a-retenir}
+
+- Un projet livrable tient dans deux fichiers placés ensemble : `main.py` et `res.pyxres`.
+- Le dossier se vérifie en le copiant ailleurs, sous un autre nom, puis en le relançant.
+- Une colonne de texte se calcule, elle ne s’écrit pas à la main.
+- Un dessin commun à deux écrans devient une méthode à paramètres.
+- La musique s’arrête avant le bruitage de défaite.
+- La difficulté se règle avec quatre constantes, en rejouant une partie après chaque changement.
+- La personnalisation commence par deux extensions menées jusqu’au bout.
+
+La formation s’arrête ici pour le jeu 2D. Le module bonus ouvre la troisième dimension avec Pyxel Cube : les mêmes principes, une scène, un objet, une caméra, et un petit jeu pour finir.
+::::

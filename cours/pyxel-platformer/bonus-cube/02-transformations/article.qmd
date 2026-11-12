@@ -1,0 +1,342 @@
+---
+description: "Organiser une scène 3D en arbre, faire tourner un objet parent avec ses enfants et piloter la caméra au clavier"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Module bonus · Cube 2
+:::
+
+# Nœuds, transformations et caméra
+
+::: {.lesson-subtitle}
+Faire tourner un objet avec ses enfants, empiler les transformations et déplacer la caméra au clavier
+:::
+
+:::
+
+## Présentation {#presenter}
+
+Le chapitre précédent affichait un cube. Celui-ci affiche six nœuds : un sol, un objet central et quatre cubes accrochés à lui. La différence n’est pas décorative, elle est structurelle.
+
+Une scène 3D n’est pas une liste d’objets posés côte à côte, c’est un arbre. Chaque nœud a une transformation locale, relative à son parent. Quand le parent tourne, les enfants tournent avec lui, sans qu’aucune ligne de code ne parle d’eux. C’est cette règle qui rend la 3D praticable : on décrit quelques mouvements simples, et le moteur compose le reste.
+
+Le chapitre montre aussi la seconde pièce mobile d’une scène : la caméra. Jusqu’ici elle était fixe. Ici, deux touches la font tourner autour de l’objet, deux autres la montent et la descendent.
+
+::: {.callout-note title="Un arbre, pas une liste"}
+
+Le parcours 2D utilisait des listes : des ennemis, des pièces, des plateformes. En 3D, on garde des nœuds, mais leur place dépend de leur parent. Un cube enfant d’un mobile à `y = 40` flotte à 40 unités du sol, même si sa propre transformation ne parle que d’un cercle de rayon 36.
+
+:::
+
+## Objectifs {#objectifs}
+
+À la fin du chapitre, vous devez pouvoir :
+
+1. construire un nœud parent qui contient plusieurs enfants ;
+2. expliquer ce que signifie une transformation locale ;
+3. placer des objets sur un cercle avec `pyxel.cos()` et `pyxel.sin()` ;
+4. faire tourner un groupe d’objets en ne tournant que son parent ;
+5. déplacer une caméra autour d’une scène avec les flèches ;
+6. borner une valeur avec `pyxel.clamp()` ;
+7. lire les entrées clavier dans le `on_update()` d’un nœud.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Cube 1 | Cube 2 |
+| --- | --- | --- |
+| Nœuds de la scène | 2, côte à côte | 6, dont 4 enfants d’un même parent |
+| Transformations | une par objet | deux niveaux qui se composent |
+| Rotation | un cube sur lui-même | un groupe autour de son centre |
+| Caméra | fixe | angle et hauteur réglés au clavier |
+| Entrées | `Q` seulement | `Q` et les quatre flèches |
+| Couleurs | une par objet | une par cube, choisie à la construction |
+
+## Le code complet {#le-code-complet}
+
+```python
+import pyxel
+from pyxel.cube import Camera, Mat4, Node, Shading, Vec3
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+BACKGROUND_COLOR = pyxel.COLOR_BLACK
+
+GROUND_SIZE = 200.0
+GROUND_COLOR = pyxel.COLOR_GREEN
+
+CUBE_SIZE = 12.0
+CUBE_COLORS = [
+    pyxel.COLOR_RED,
+    pyxel.COLOR_ORANGE,
+    pyxel.COLOR_YELLOW,
+    pyxel.COLOR_LIME,
+]
+CUBE_RADIUS = 36.0
+
+MOBILE_HEIGHT = 40.0
+MOBILE_SPEED = 1.5
+
+CAMERA_HEIGHT = 60.0
+CAMERA_DISTANCE = 160.0
+CAMERA_SPEED = 2.0
+CAMERA_HEIGHT_MIN = 20.0
+CAMERA_HEIGHT_MAX = 150.0
+
+
+class Ground(Node):
+    def on_draw(self):
+        self.box(
+            Mat4.from_translation(Vec3(0.0, -1.0, 0.0)),
+            Vec3(GROUND_SIZE, 2.0, GROUND_SIZE),
+            GROUND_COLOR,
+        )
+
+
+class Cube(Node):
+    def __init__(self, color):
+        super().__init__()
+        self.color = color
+
+    def on_draw(self):
+        self.box(
+            Mat4.IDENTITY,
+            Vec3(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE),
+            self.color,
+        )
+
+
+class Mobile(Node):
+    def __init__(self):
+        super().__init__()
+
+        count = len(CUBE_COLORS)
+
+        for index in range(count):
+            angle = index * 360.0 / count
+            cube = Cube(CUBE_COLORS[index])
+            cube.transform = Mat4.from_translation(
+                Vec3(
+                    pyxel.cos(angle) * CUBE_RADIUS,
+                    0.0,
+                    pyxel.sin(angle) * CUBE_RADIUS,
+                ),
+            )
+            self.add_child(cube)
+
+    def on_update(self):
+        spin = Mat4.from_euler(
+            Vec3(0.0, pyxel.frame_count * MOBILE_SPEED, 0.0),
+        )
+        self.transform = (
+            Mat4.from_translation(Vec3(0.0, MOBILE_HEIGHT, 0.0)) * spin
+        )
+
+
+class Scene(Node):
+    def __init__(self):
+        super().__init__()
+
+        self.shading = Shading(pyxel.colors)
+
+        self.camera = Camera()
+        self.camera.clear_color = BACKGROUND_COLOR
+
+        self.yaw = 0.0
+        self.height = CAMERA_HEIGHT
+        self.update_camera()
+
+        self.add_child(Ground())
+        self.add_child(Mobile())
+
+    def update_camera(self):
+        eye = Vec3(
+            pyxel.sin(self.yaw) * CAMERA_DISTANCE,
+            self.height,
+            pyxel.cos(self.yaw) * CAMERA_DISTANCE,
+        )
+        self.camera.transform = Mat4.look_at(
+            eye,
+            Vec3(0.0, MOBILE_HEIGHT, 0.0),
+        )
+
+    def on_update(self):
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.yaw -= CAMERA_SPEED
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.yaw += CAMERA_SPEED
+
+        if pyxel.btn(pyxel.KEY_UP):
+            self.height += CAMERA_SPEED
+        elif pyxel.btn(pyxel.KEY_DOWN):
+            self.height -= CAMERA_SPEED
+
+        self.height = pyxel.clamp(
+            self.height,
+            CAMERA_HEIGHT_MIN,
+            CAMERA_HEIGHT_MAX,
+        )
+        self.update_camera()
+
+
+class App:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Cube 2 - transformations",
+        )
+
+        self.scene = Scene()
+
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.scene.update()
+
+    def draw(self):
+        self.scene.draw(0, 0, pyxel.width, pyxel.height)
+
+
+App()
+```
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Un parent qui porte ses enfants
+
+La classe `Mobile` construit quatre cubes dans une boucle et les accroche à elle-même :
+
+```python
+cube = Cube(CUBE_COLORS[index])
+cube.transform = Mat4.from_translation(Vec3(...))
+self.add_child(cube)
+```
+
+`add_child()` inscrit le cube dans l’arbre. Sans cet appel, le cube existerait, mais personne ne le mettrait à jour ni ne le dessinerait : c’est l’une des erreurs les plus fréquentes du chapitre. Une simple variable locale ne suffit pas, il faut une place dans l’arbre.
+
+La transformation écrite sur un cube est *locale* : elle le place par rapport à son parent, pas par rapport au monde. Le mobile mesure donc un cercle de rayon 36 dans son propre repère, puis il est lui-même posé à 40 unités du sol. Le résultat à l’écran est un anneau de quatre cubes qui flotte au-dessus du sol. Aucun enfant ne contient le nombre 40 : c’est le parent qui l’apporte.
+
+Pour connaître la position réelle dans le monde, un nœud expose `world_transform`, la composition de toutes les transformations depuis la racine. Dans ce chapitre, on n’en a pas besoin : c’est précisément l’intérêt de l’arbre.
+
+### Quatre cubes sur un cercle
+
+Les positions viennent d’un calcul classique :
+
+```python
+angle = index * 360.0 / count
+Vec3(pyxel.cos(angle) * CUBE_RADIUS, 0.0, pyxel.sin(angle) * CUBE_RADIUS)
+```
+
+Avec quatre cubes, les angles valent 0, 90, 180 et 270 degrés. Le premier se place à `(36, 0, 0)`, le deuxième à `(0, 0, 36)`, le troisième à `(-36, 0, 0)` et le dernier à `(0, 0, -36)`. Multiplier par le rayon fixe la distance au centre : un cercle de rayon 36.
+
+Attention à une particularité de Pyxel : `pyxel.cos()` et `pyxel.sin()` travaillent en degrés, alors que leurs équivalents du module `math` travaillent en radians. Écrire `angle = 1.57` pour un quart de tour ne donne pas le résultat attendu ; il faut écrire `90`.
+
+### Tourner le parent, pas les enfants
+
+La mise à jour du mobile tient en trois lignes, exactement comme celle du cube du chapitre précédent :
+
+```python
+spin = Mat4.from_euler(Vec3(0.0, pyxel.frame_count * MOBILE_SPEED, 0.0))
+self.transform = Mat4.from_translation(Vec3(0.0, MOBILE_HEIGHT, 0.0)) * spin
+```
+
+Le parent est d’abord tourné, puis placé à sa hauteur. Ses quatre enfants, eux, ne changent jamais de transformation : leurs positions locales restent les mêmes pendant toute la partie. C’est le parent qui les entraîne, et l’anneau tourne autour de l’axe vertical du mobile.
+
+Ce découpage rend les réglages indépendants. `MOBILE_SPEED` règle la vitesse de l’anneau, `CUBE_RADIUS` son rayon, `MOBILE_HEIGHT` son altitude. Modifier l’un ne touche pas les autres.
+
+::: {.callout-tip title="Le test qui explique tout"}
+
+Retirez temporairement la ligne `self.transform = ...` du mobile, puis ajoutez la même rotation sur chaque cube dans `Cube.on_update()`. Les cubes tourneront sur eux-mêmes sans décrire de cercle. La différence entre les deux versions est la leçon du chapitre.
+
+:::
+
+### Une caméra que le clavier fait tourner
+
+La scène conserve deux nombres, `yaw` et `height`, et recalcule la position de l’œil à partir d’eux :
+
+```python
+eye = Vec3(
+    pyxel.sin(self.yaw) * CAMERA_DISTANCE,
+    self.height,
+    pyxel.cos(self.yaw) * CAMERA_DISTANCE,
+)
+```
+
+À `yaw = 0`, l’œil se trouve à `(0, height, 160)`, donc devant la scène. En augmentant `yaw`, l’œil glisse sur un cercle de rayon 160 autour du mobile : la scène est vue de côté, puis de derrière. Le point visé, lui, ne change pas : `Vec3(0.0, MOBILE_HEIGHT, 0.0)`, le centre de l’anneau. C’est ce qui donne l’impression de tourner autour de l’objet plutôt que de le traverser.
+
+La hauteur suit les flèches haut et bas, puis passe dans `pyxel.clamp()`. Cette fonction ramène la valeur entre un minimum et un maximum : la caméra ne peut donc pas descendre sous le sol ni monter à l’infini. Sans elle, une seconde d’appui prolongé suffirait à sortir de la scène.
+
+Le calcul de la caméra est regroupé dans `update_camera()`, appelée une fois à la construction puis à chaque image. Une seule méthode décrit la position de l’œil : il n’y a pas deux endroits à corriger quand on change de formule.
+
+::: {.callout-important title="La caméra appartient à la scène"}
+
+`self.camera` est créé dans `Scene`, jamais dans un objet. Si la caméra était posée sur le mobile, elle tournerait avec lui, et le mouvement du clavier se cumulerait à la rotation de l’anneau. Un point de vue se place sur la racine, ou sur un nœud qui n’a pas vocation à bouger.
+
+:::
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+1. Quatre cubes de couleurs différentes forment un anneau horizontal au-dessus du sol.
+2. L’anneau tourne sur lui-même, les cubes restent à égale distance du centre.
+3. Les flèches gauche et droite font le tour de la scène : on voit l’anneau de face, de côté, puis de derrière.
+4. Les flèches haut et bas changent la hauteur du point de vue ; la caméra s’arrête à 20 unités du sol et à 150 unités au maximum.
+5. Le sol reste parfaitement immobile pendant tous ces mouvements.
+6. La touche `Q` ferme la fenêtre.
+
+Un anneau qui tourne mais reste vu sous le même angle signifie que `update_camera()` n’est pas appelée dans `on_update()`. Un anneau qui disparaît quand on tourne indique une caméra placée trop près du centre : augmentez `CAMERA_DISTANCE`.
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+| Symptôme | Cause | Correction |
+| --- | --- | --- |
+| aucun cube visible | `self.add_child(cube)` oublié dans la boucle | accrocher chaque cube au mobile |
+| les cubes tournent sur eux-mêmes | rotation écrite dans `Cube` au lieu de `Mobile` | tourner le parent, laisser les enfants fixes |
+| anneau écrasé près du centre | angles en radians alors que `pyxel.sin()` attend des degrés | écrire 90 pour un quart de tour |
+| anneau traversé par le sol | `MOBILE_HEIGHT` trop faible ou oublié | placer le parent au-dessus du sol |
+| caméra qui passe sous le sol | `pyxel.clamp()` absent | borner la hauteur entre 20 et 150 |
+| caméra qui tourne deux fois trop vite | angle ajouté à chaque image *et* multiplié par `frame_count` | garder un seul des deux calculs |
+| caméra qui vise le vide | point visé resté à `Vec3.ZERO` alors que l’objet est surélevé | viser le centre du mobile |
+| flèches sans effet | lecture du clavier dans `on_draw()` | lire les entrées dans `on_update()` |
+
+## Personnaliser la scène {#experimentations}
+
+| Idée | Où intervenir |
+| --- | --- |
+| Ajouter ou retirer des cubes | liste `CUBE_COLORS` : le calcul de l’angle suit tout seul |
+| Agrandir l’anneau | `CUBE_RADIUS` |
+| Monter l’anneau | `MOBILE_HEIGHT` |
+| Accélérer la rotation | `MOBILE_SPEED` |
+| Changer la taille des cubes | `CUBE_SIZE` |
+| Reculer la caméra | `CAMERA_DISTANCE` |
+| Tourner plus vite au clavier | `CAMERA_SPEED` |
+| Changer les bornes de hauteur | `CAMERA_HEIGHT_MIN` et `CAMERA_HEIGHT_MAX` |
+| Élargir le champ de vision | `self.camera.fov`, en degrés |
+| Faire tourner deux anneaux en sens inverse | un second `Mobile` avec un angle négatif |
+
+L’exercice du chapitre : ajouter un second anneau, plus large et plus bas, qui tourne dans le sens inverse. Il suffit d’une seconde instance de `Mobile`, d’un rayon différent et d’un signe moins dans son angle. Le résultat montre bien que chaque sous-arbre vit sa propre vie dans la même scène.
+
+## À retenir {#a-retenir}
+
+- Une scène est un arbre : chaque nœud peut contenir d’autres nœuds.
+- `transform` est locale, relative au parent ; `world_transform` donne la position réelle dans le monde.
+- Tourner un parent entraîne tous ses enfants, sans une ligne de code pour eux.
+- `pyxel.cos()` et `pyxel.sin()` travaillent en degrés.
+- Un cercle se décrit avec un angle, un rayon et deux fonctions trigonométriques.
+- La caméra se place sur la scène, jamais sur l’objet qu’elle observe.
+- `pyxel.clamp()` borne une valeur entre deux limites, et évite de sortir de la scène.
+- Les entrées se lisent dans `on_update()`, les dessins se font dans `on_draw()`.
+
+Il reste à faire de cette scène un jeu : un objet que l’on pilote, des objets à ramasser, un score, et une caméra qui suit. C’est l’objet du troisième chapitre.
+::::

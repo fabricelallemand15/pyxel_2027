@@ -573,7 +573,7 @@ un seul ennemi testé -> vérification hors boucle
 - Afficher en incrustation le tableau des quatre comparaisons au moment de la méthode.
 - Montrer explicitement le cas des bords jointifs, qui ne déclenche rien.
 - Garder le compteur visible pendant toute la phase de vérification.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

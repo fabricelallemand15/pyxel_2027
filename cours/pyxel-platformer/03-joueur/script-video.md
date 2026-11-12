@@ -443,7 +443,7 @@ erreur de nom             -> pyxel.KEY_LEFT écrit autrement
 - Montrer en incrustation la comparaison entre `btn()` et `btnp()`.
 - Laisser la musique audible à volume réduit pendant les phases de saisie.
 - Montrer chaque vérification en exécutant réellement le jeu, sans accélérer la séquence.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

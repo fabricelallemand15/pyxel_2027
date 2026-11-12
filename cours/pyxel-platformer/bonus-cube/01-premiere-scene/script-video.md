@@ -401,7 +401,7 @@ deux appels font vivre l’arbre
 - Montrer le lien entre `y = 16`, la taille 32 et le contact avec le sol, avec un trait à l’écran.
 - Faire varier `CAMERA_HEIGHT` en direct, puis revenir à la valeur du chapitre.
 - Provoquer les trois erreurs en direct, sans couper.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

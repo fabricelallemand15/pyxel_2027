@@ -1,0 +1,793 @@
+---
+description: "Organiser le jeu en états, ajouter un écran titre, un écran de victoire et un écran de défaite, et redémarrer une partie"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon 10
+:::
+
+# Audio, interface et états du jeu
+
+::: {.lesson-subtitle}
+Organiser le jeu en états, ajouter un écran titre, un écran de victoire et un écran de défaite, et redémarrer une partie
+:::
+
+:::
+
+## Présentation {#presentation}
+
+Le jeu fonctionne, mais il commence sans prévenir et se termine sans issue. Une partie perdue fige l’écran ; pour rejouer, il faut relancer le programme. Il n’y a pas d’écran titre, pas de victoire possible, et la musique continue après la dernière image.
+
+Cette leçon organise le jeu en **états**. Le programme ne se demande plus « la partie est-elle perdue ? », mais « dans quel état suis-je ? » : titre, jeu, défaite ou victoire. Chaque état a sa mise à jour et son dessin, et le passage de l’un à l’autre tient en une affectation.
+
+L’audio suit le même mouvement : la musique du niveau démarre avec la partie et s’arrête à la fin. Les bruitages du saut, de la pièce et de la collision restent inchangés.
+
+## Objectifs {#objectifs}
+
+À la fin de la leçon, vous devez pouvoir :
+
+1. décrire l’état d’un jeu par une constante ;
+2. aiguiller `update()` et `draw()` selon cet état ;
+3. construire une partie seulement quand elle commence ;
+4. recharger les ressources pour recommencer ;
+5. lancer puis arrêter la musique au bon moment ;
+6. centrer un texte dans la fenêtre.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Leçon 9 | Leçon 10 |
+| --- | --- | --- |
+| État du jeu | `is_game_over` | `scene`, quatre constantes |
+| `Game.update()` | une seule séquence | aiguillage vers quatre méthodes |
+| `Game.draw()` | un seul dessin | aiguillage vers quatre dessins |
+| Construction | dans `__init__()` | dans `start_game()`, à chaque partie |
+| Ressources | chargées une fois | rechargées à chaque partie |
+| Musique | lancée au démarrage | lancée avec la partie, arrêtée à la fin |
+| Interface | score et pièces sur une ligne | deux lignes, écrans de titre et de fin |
+| Décor | cases vides dessinées en noir | cases vides transparentes |
+
+::: {.callout-note title="Rien ne change dans le jeu lui-même"}
+
+Le niveau, le joueur, les pièces, les ennemis, les collisions et la caméra sont ceux de la leçon 9. Seule l’organisation du programme change : les mêmes instructions sont désormais rangées par état.
+
+:::
+
+## Le code complet {#le-code-complet}
+
+```python
+import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 64
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+]
+COIN_TILE = (3, 1)
+ENEMY_TILE = (4, 0)
+EMPTY_TILE = (5, 5)
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_IDLE_TILE = (0, 0)
+PLAYER_JUMP_TILE = (1, 0)
+PLAYER_WALK_TILES = [
+    (2, 0),
+    (3, 0),
+]
+ANIMATION_SPEED = 6
+PLAYER_START_X = 8
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+ENEMY_SPEED = 1
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+COIN_SOUND = 1
+HIT_SOUND = 2
+
+SCENE_TITLE = 0
+SCENE_PLAY = 1
+SCENE_GAMEOVER = 2
+SCENE_WIN = 3
+
+
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.is_alive = True
+
+    def update(self):
+        pass
+
+    def draw(self):
+        tile_x, tile_y = COIN_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Enemy:
+    def __init__(self, x, y, min_x, max_x):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.dx = ENEMY_SPEED
+        self.min_x = min_x
+        self.max_x = max_x
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x < self.min_x:
+            self.x = self.min_x
+            self.dx = ENEMY_SPEED
+        elif self.x > self.max_x:
+            self.x = self.max_x
+            self.dx = -ENEMY_SPEED
+
+    def draw(self):
+        tile_x, tile_y = ENEMY_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+    def move_player(self, x, y, dx, dy):
+        return self.tilemap.collide(
+            x,
+            y,
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT,
+            dx,
+            dy,
+            SOLID_TILES,
+        )
+
+    def take_coins(self):
+        positions = []
+
+        for tile_y in range(LEVEL_HEIGHT):
+            for tile_x in range(LEVEL_WIDTH):
+                if self.tilemap.pget(tile_x, tile_y) == COIN_TILE:
+                    self.tilemap.pset(tile_x, tile_y, EMPTY_TILE)
+                    positions.append(
+                        (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
+                    )
+
+        return positions
+
+
+class Player:
+    def __init__(self, x, y, level):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+        self.is_facing_right = True
+        self.tile = PLAYER_IDLE_TILE
+        self.level = level
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+            self.is_facing_right = False
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+            self.is_facing_right = True
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+
+        was_falling = self.dy > 0
+        self.dx, self.dy = self.level.move_player(
+            self.x,
+            self.y,
+            self.dx,
+            self.dy,
+        )
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            self.level.width - self.width,
+        )
+        self.y += self.dy
+
+        self.is_on_ground = was_falling and self.dy == 0
+        self.choose_tile()
+
+    def draw(self):
+        tile_x, tile_y = self.tile
+
+        if self.is_facing_right:
+            width = self.width
+        else:
+            width = -self.width
+
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+    def choose_tile(self):
+        if not self.is_on_ground:
+            self.tile = PLAYER_JUMP_TILE
+        elif self.dx != 0:
+            index = pyxel.frame_count // ANIMATION_SPEED % 2
+            self.tile = PLAYER_WALK_TILES[index]
+        else:
+            self.tile = PLAYER_IDLE_TILE
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Chapitre 10 - interface",
+        )
+
+        self.scene = SCENE_TITLE
+        self.score = 0
+
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        if self.scene == SCENE_TITLE:
+            self.update_title()
+        elif self.scene == SCENE_PLAY:
+            self.update_play()
+        elif self.scene == SCENE_GAMEOVER:
+            self.update_gameover()
+        else:
+            self.update_win()
+
+    def draw(self):
+        if self.scene == SCENE_TITLE:
+            self.draw_title()
+        elif self.scene == SCENE_PLAY:
+            self.draw_play()
+        elif self.scene == SCENE_GAMEOVER:
+            self.draw_gameover()
+        else:
+            self.draw_win()
+
+    def update_title(self):
+        if pyxel.btnp(pyxel.KEY_SPACE):
+            self.start_game()
+
+    def update_play(self):
+        self.player.update()
+
+        for coin in self.coins:
+            coin.update()
+
+        for enemy in self.enemies:
+            enemy.update()
+
+        self.check_coins()
+
+        if not self.coins:
+            self.scene = SCENE_WIN
+            pyxel.stop()
+            return
+
+        self.check_enemies()
+
+    def update_gameover(self):
+        if pyxel.btnp(pyxel.KEY_SPACE):
+            self.scene = SCENE_TITLE
+
+    def update_win(self):
+        if pyxel.btnp(pyxel.KEY_SPACE):
+            self.scene = SCENE_TITLE
+
+    def draw_title(self):
+        pyxel.cls(BACKGROUND_COLOR)
+
+        pyxel.text(98, 96, "MINI PLATFORMER", TEXT_COLOR)
+        pyxel.text(76, 120, "Gauche et droite : marcher", TEXT_COLOR)
+        pyxel.text(98, 136, "Espace : sauter", TEXT_COLOR)
+        pyxel.text(92, 160, "Appuyez sur Espace", TEXT_COLOR)
+
+    def draw_play(self):
+        pyxel.cls(BACKGROUND_COLOR)
+
+        camera_x = pyxel.clamp(
+            self.player.x + self.player.width // 2 - pyxel.width // 2,
+            0,
+            self.level.width - pyxel.width,
+        )
+        pyxel.camera(camera_x, 0)
+
+        self.level.draw()
+
+        for coin in self.coins:
+            coin.draw()
+
+        for enemy in self.enemies:
+            enemy.draw()
+
+        self.player.draw()
+
+        pyxel.camera()
+
+        pyxel.text(4, 4, f"Score : {self.score}", TEXT_COLOR)
+        pyxel.text(4, 12, f"Restantes : {len(self.coins)}", TEXT_COLOR)
+
+    def draw_gameover(self):
+        self.draw_play()
+
+        pyxel.rect(48, 92, 160, 60, pyxel.COLOR_BLACK)
+        pyxel.text(102, 104, "Partie perdue", pyxel.COLOR_RED)
+        pyxel.text(108, 116, f"Score : {self.score}", TEXT_COLOR)
+        pyxel.text(78, 136, "Espace : revenir au titre", TEXT_COLOR)
+
+    def draw_win(self):
+        self.draw_play()
+
+        pyxel.rect(48, 92, 160, 60, pyxel.COLOR_BLACK)
+        pyxel.text(112, 104, "Victoire", pyxel.COLOR_YELLOW)
+        pyxel.text(108, 116, f"Score : {self.score}", TEXT_COLOR)
+        pyxel.text(78, 136, "Espace : revenir au titre", TEXT_COLOR)
+
+    def start_game(self):
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+            self.level,
+        )
+
+        self.coins = []
+        for x, y in self.level.take_coins():
+            self.coins.append(Coin(x, y))
+
+        self.enemies = [
+            Enemy(88, 216, 88, 160),
+            Enemy(104, 144, 104, 160),
+            Enemy(320, 216, 288, 440),
+        ]
+
+        self.score = 0
+        self.scene = SCENE_PLAY
+
+        pyxel.playm(MUSIC, loop=True)
+
+    def collide(self, a, b):
+        return (
+            a.x < b.x + b.width
+            and a.x + a.width > b.x
+            and a.y < b.y + b.height
+            and a.y + a.height > b.y
+        )
+
+    def check_coins(self):
+        for coin in self.coins:
+            if self.collide(self.player, coin):
+                coin.is_alive = False
+                self.score += 1
+                pyxel.play(1, COIN_SOUND)
+
+        self.coins = [coin for coin in self.coins if coin.is_alive]
+
+    def check_enemies(self):
+        for enemy in self.enemies:
+            if self.collide(self.player, enemy):
+                self.scene = SCENE_GAMEOVER
+                pyxel.stop()
+                pyxel.play(2, HIT_SOUND)
+
+
+Game()
+```
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Un état, c’est un nombre
+
+```python
+SCENE_TITLE = 0
+SCENE_PLAY = 1
+SCENE_GAMEOVER = 2
+SCENE_WIN = 3
+```
+
+Quatre constantes décrivent les quatre situations possibles du jeu. `self.scene` contient l’une d’elles, et une seule : le jeu ne peut pas être à la fois en défaite et en victoire.
+
+Des booléens feraient le même travail en apparence, mais autoriseraient des combinaisons impossibles : `is_game_over` et `is_win` vrais en même temps. Un état unique supprime le problème.
+
+### Aiguiller la mise à jour et le dessin
+
+```python
+def update(self):
+    if pyxel.btnp(pyxel.KEY_Q):
+        pyxel.quit()
+
+    if self.scene == SCENE_TITLE:
+        self.update_title()
+    elif self.scene == SCENE_PLAY:
+        self.update_play()
+    elif self.scene == SCENE_GAMEOVER:
+        self.update_gameover()
+    else:
+        self.update_win()
+```
+
+La boucle de jeu reste la même ; ce sont les méthodes appelées qui changent. `draw()` suit exactement le même aiguillage.
+
+La touche `Q` est testée avant l’aiguillage : elle fonctionne donc dans tous les états, y compris sur l’écran titre.
+
+::: {.callout-tip title="Une méthode par état"}
+
+Quatre petites méthodes se lisent mieux qu’une longue suite de conditions. Chacune ne s’occupe que de son état : `update_play()` ne sait rien de l’écran titre, `update_title()` ne sait rien des ennemis.
+
+:::
+
+### L’écran titre
+
+```python
+def update_title(self):
+    if pyxel.btnp(pyxel.KEY_SPACE):
+        self.start_game()
+```
+
+Au lancement, `__init__()` ne crée que l’état et le score. Ni niveau, ni joueur, ni liste d’objets : la partie n’existe pas encore.
+
+C’est voulu. Construire les objets au démarrage obligerait à les réinitialiser à chaque nouvelle tentative, alors que `start_game()` les crée une fois pour toutes au bon moment.
+
+### Recharger les ressources pour recommencer
+
+```python
+def start_game(self):
+    pyxel.load(RESOURCE_FILE)
+
+    self.level = Level()
+    ...
+```
+
+La première ligne est indispensable. Depuis la leçon 7, `Level.take_coins()` remplace les tuiles de pièce par des tuiles vides : le décor ne contient plus de pièce après la première partie.
+
+`pyxel.load()` relit le fichier `res.pyxres` et rétablit la tilemap d’origine. Les dix-huit pièces reviennent, et `take_coins()` peut les transformer en objets.
+
+La suite de la méthode reconstruit le niveau, le joueur, les pièces, les ennemis, remet le score à zéro et passe l’état à `SCENE_PLAY`.
+
+::: {.callout-warning title="Sans rechargement, la deuxième partie est vide"}
+
+Si `pyxel.load()` manque, la seconde partie démarre avec un décor sans pièce : `take_coins()` ne trouve plus aucune tuile, la liste reste vide et la victoire est immédiate.
+
+:::
+
+### La musique
+
+```python
+pyxel.playm(MUSIC, loop=True)
+```
+
+La musique démarre avec la partie, en boucle, et non au lancement du programme : l’écran titre reste silencieux.
+
+À la fin d’une partie, `pyxel.stop()` sans argument coupe tous les canaux :
+
+```python
+self.scene = SCENE_WIN
+pyxel.stop()
+```
+
+Les bruitages du saut, de la pièce et de la collision continuent d’utiliser les canaux 0, 1 et 2 ; la musique occupe les canaux 0 et 1 de son côté, et Pyxel mélange le tout.
+
+À la défaite, l’ordre des deux appels compte : `pyxel.stop()` coupe tous les canaux, y compris celui du bruitage. Le son de collision est donc joué après l’arrêt de la musique, sinon il serait interrompu aussitôt.
+
+### La victoire
+
+```python
+self.check_coins()
+
+if not self.coins:
+    self.scene = SCENE_WIN
+    pyxel.stop()
+    return
+
+self.check_enemies()
+```
+
+La victoire se teste juste après le ramassage : une liste de pièces vide signifie que les dix-huit pièces ont été prises.
+
+Le `return` est important. Sans lui, `check_enemies()` s’exécuterait encore : si le joueur touche un ennemi dans la même image, la défaite écraserait la victoire.
+
+### Laisser voir le fond du décor
+
+```python
+pyxel.bltm(
+    0,
+    0,
+    self.tilemap,
+    0,
+    0,
+    self.width,
+    self.height,
+    TRANSPARENT_COLOR,
+)
+```
+
+Le niveau couvre toute la fenêtre : ses cases vides occupent la plus grande partie de l’écran. Sans clé de transparence, `bltm()` recopie leur couleur 0, qui est du noir, et le ciel devient noir.
+
+Le dernier argument indique la couleur à ne pas recopier. Les cases vides se contentent alors de laisser la place au fond dessiné par `pyxel.cls()` : le bleu nuit de `BACKGROUND_COLOR` apparaît.
+
+Les sprites utilisaient déjà cette couleur 0 comme transparence dans `blt()`, depuis la leçon 2. La même convention s’applique au décor.
+
+### L’interface du jeu
+
+```python
+pyxel.text(4, 4, f"Score : {self.score}", TEXT_COLOR)
+pyxel.text(4, 12, f"Restantes : {len(self.coins)}", TEXT_COLOR)
+```
+
+Deux lignes, en haut à gauche, dessinées après la remise à zéro de la caméra : elles restent fixes pendant le défilement. Le score vient de l’état du jeu, le nombre de pièces de la longueur de la liste.
+
+Le libellé `Restantes` évite un accent, pour une raison expliquée plus bas.
+
+### Centrer un texte
+
+Dans la police de Pyxel, un caractère mesure 4 pixels de large et 6 de haut. Un texte de `n` caractères occupe donc `4 × n` pixels, et se centre à la colonne `(256 - 4 × n) // 2`.
+
+| Texte | Caractères | Largeur | Colonne |
+| --- | --- | --- | --- |
+| `MINI PLATFORMER` | 15 | 60 | `98` |
+| `Gauche et droite : marcher` | 26 | 104 | `76` |
+| `Espace : sauter` | 15 | 60 | `98` |
+| `Appuyez sur Espace` | 18 | 72 | `92` |
+| `Partie perdue` | 13 | 52 | `102` |
+| `Victoire` | 8 | 32 | `112` |
+| `Espace : revenir au titre` | 25 | 100 | `78` |
+
+Ces colonnes sont écrites en dur dans le code : la police ne change pas, et le calcul est fait une fois pour toutes. Une légère imprécision ne se voit pas.
+
+### Les accents et la cédille à l’écran
+
+La police intégrée à Pyxel ne contient que les caractères ASCII imprimables, de l’espace au cent vingt-sept. Une lettre accentuée ou une cédille n’est pas dessinée du tout : elle est ignorée, et le curseur ne se décale même pas.
+
+Une ligne comme `f"Pièces : {len(self.coins)}"` s’afficherait donc `Pices : 18`, et `"Leçon"` donnerait `Lecon`. Pour éviter ces lettres perdues, les textes affichés par `pyxel.text()` sont écrits sans accent : `Restantes`, `Victoire`, `Gauche et droite : marcher`.
+
+C’est aussi la raison du mot `Chapitre` dans le titre de la fenêtre et dans l’interface : la cédille de « leçon » n’existe pas dans cette police. Ce que la formation appelle une leçon, le jeu l’appelle un chapitre, et les deux mots désignent la même étape.
+
+::: {.callout-note title="Les accents restent utiles ailleurs"}
+
+Le titre passé à `pyxel.init()` est dessiné par le système, pas par la police du jeu : il accepterait des accents. Il reprend pourtant le même texte, pour que le code reste cohérent d’une leçon à l’autre.
+
+Les commentaires, les articles et les messages d’erreur gardent leurs accents. Une police complète est possible avec la classe `Font`, qui charge un fichier BDF, OTF ou TTF ; elle demande un fichier de plus, hors du cadre de la Nuit du Code.
+
+:::
+
+### Les écrans de fin
+
+```python
+def draw_gameover(self):
+    self.draw_play()
+
+    pyxel.rect(48, 92, 160, 60, pyxel.COLOR_BLACK)
+    pyxel.text(102, 104, "Partie perdue", pyxel.COLOR_RED)
+    pyxel.text(108, 116, f"Score : {self.score}", TEXT_COLOR)
+    pyxel.text(78, 136, "Espace : revenir au titre", TEXT_COLOR)
+```
+
+L’écran de défaite commence par dessiner la scène de jeu : le décor reste visible, figé, derrière le message. Le rectangle noir isole le texte, puis trois lignes suffisent.
+
+L’écran de victoire est identique, à deux détails près : le message `Victoire` remplace `Partie perdue` et passe en jaune.
+
+::: {.callout-tip title="Deux dessins, une seule scène"}
+
+Appeler `draw_play()` depuis les écrans de fin évite de recopier le dessin du niveau et des objets. Seul le message change.
+
+:::
+
+### Revenir au titre
+
+```python
+def update_gameover(self):
+    if pyxel.btnp(pyxel.KEY_SPACE):
+        self.scene = SCENE_TITLE
+```
+
+La barre d’espace ramène au titre, dans les deux écrans de fin. Aucun objet n’est détruit : le retour au titre suffit, puisque `start_game()` reconstruit tout à la partie suivante. L’ancienne partie est simplement oubliée.
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+| Point à vérifier | Résultat attendu |
+| --- | --- |
+| Au lancement | Écran titre, musique silencieuse, aucun objet créé |
+| Barre d’espace sur le titre | La partie démarre, la musique se lance |
+| Pendant la partie | Score et pièces restantes en haut à gauche, fixes pendant le défilement |
+| Toutes les pièces ramassées | Écran `Victoire`, musique arrêtée |
+| Contact avec un ennemi | Écran `Partie perdue`, musique arrêtée |
+| Barre d’espace sur un écran de fin | Retour à l’écran titre |
+| Nouvelle partie | Dix-huit pièces à nouveau, score à zéro |
+| Deuxième défaite | Retour au titre, puis nouvelle partie possible indéfiniment |
+| Touche `Q` | Ferme le jeu dans tous les états |
+
+Le jeu complet tient dans un seul fichier `main.py` et un seul fichier `res.pyxres` : la contrainte de la Nuit du Code est respectée.
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+::: {.callout-warning title="La deuxième partie n’a plus de pièce"}
+
+Sans `pyxel.load()` au début de `start_game()`, les tuiles de pièce restent effacées : la liste est vide dès le départ et l’écran de victoire s’affiche aussitôt.
+
+:::
+
+::: {.callout-warning title="Le jeu démarre directement"}
+
+Construire les objets dans `__init__()` et dessiner la scène de jeu dès la première image supprime l’écran titre. Il faut que `self.scene` vaille `SCENE_TITLE` au lancement, et que `draw_title()` ne touche à aucun objet de jeu.
+
+:::
+
+::: {.callout-warning title="La musique continue après la fin"}
+
+Sans `pyxel.stop()`, la musique du niveau joue encore derrière l’écran de défaite et pendant la saisie du titre suivant.
+
+:::
+
+::: {.callout-warning title="La défaite écrase la victoire"}
+
+Oublier le `return` après le test de victoire laisse `check_enemies()` s’exécuter. Un ennemi touché dans la même image remplace `SCENE_WIN` par `SCENE_GAMEOVER`.
+
+:::
+
+::: {.callout-warning title="Un état non traité"}
+
+Avec un `else` final, une scène oubliée tombe dans la dernière branche : le dessin de la victoire apparaîtrait dans un autre état. Ajouter une scène impose de vérifier les deux aiguillages, celui de `update()` et celui de `draw()`.
+
+:::
+
+::: {.callout-warning title="Deux booléens au lieu d’un état"}
+
+`is_game_over` et `is_win` peuvent être vrais en même temps, et rien dans le code n’empêche cette combinaison. Un état unique rend ces situations impossibles.
+
+:::
+
+## Expérimentations {#experimentations}
+
+Ces modifications sont facultatives.
+
+### Une musique d’accueil
+
+```python
+pyxel.playm(MUSIC, loop=True)
+```
+
+Ajoutée dans `update_title()`, cette ligne jouerait la même musique sur l’écran titre. Le fichier ne contient qu’une musique : pour en avoir une seconde, il faut la composer dans l’éditeur, puis appeler `pyxel.playm(1, loop=True)`.
+
+### Trois vies
+
+```python
+self.lives = 3
+```
+
+Au contact d’un ennemi, `self.lives` diminue et le joueur revient au départ ; l’écran de défaite n’arrive qu’à zéro. Le compteur de vies s’affiche sous le score, et se remet à trois dans `start_game()`.
+
+### Un temps limité
+
+```python
+self.remaining = 60 - pyxel.frame_count // 30
+```
+
+À trente images par seconde, diviser le compteur par trente donne des secondes. Quand le temps atteint zéro, l’état passe à `SCENE_GAMEOVER`.
+
+### Une pause
+
+```python
+elif pyxel.btnp(pyxel.KEY_ESCAPE):
+    self.scene = SCENE_PAUSE
+```
+
+Un cinquième état suffit : `update_pause()` attend une nouvelle pression, `draw_pause()` réaffiche la scène figée avec un message. La pause n’a pas besoin d’arrêter la musique.
+
+### Un meilleur score
+
+```python
+if self.score > self.best_score:
+    self.best_score = self.score
+```
+
+L’attribut est mis à jour à la fin de la partie et affiché sur l’écran titre. Il disparaît à la fermeture du programme : le conserver demanderait d’écrire dans un fichier.
+
+### Une transition en fondu
+
+```python
+pyxel.dither(0.5)
+```
+
+Cette instruction dessine la suite en semi-transparence, jusqu’à `pyxel.dither(1)`. Elle sert à faire apparaître un message en douceur plutôt que d’un coup.
+
+## À retenir {#a-retenir}
+
+- Un état de jeu est une constante ; `self.scene` en contient une seule à la fois.
+- `update()` et `draw()` aiguillent vers une méthode par état.
+- Les objets d’une partie se construisent quand elle commence, pas au lancement du programme.
+- `pyxel.load()` relit les ressources : indispensable pour recommencer après `take_coins()`.
+- `pyxel.playm()` lance la musique, `pyxel.stop()` l’arrête.
+- La victoire se teste après le ramassage, avec un `return` avant le test des ennemis.
+- Un caractère fait 4 pixels de large : le centrage se calcule.
+- Les cases vides du décor demandent une clé de transparence ; la police intégrée n’affiche pas les accents.
+
+La dernière leçon prépare la Nuit du Code : choix d’un sujet, découpage du travail à deux, gestion du temps, vérifications avant le rendu et adaptation du jeu à d’autres idées.
+::::

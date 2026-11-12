@@ -997,7 +997,7 @@ Pyxel Cube utilise une organisation différente de la POO 2D simplifiée :
 
 Cette différence sera explicitement signalée. Les règles `update()` et `draw()` du parcours 2D ne seront pas artificiellement imposées à l'API Cube.
 
-Les trois chapitres sont produits dans `cours/pyxel-platformer/bonus-cube/`, un sous-dossier par chapitre, sur le modèle des leçons 2D. Chaque chapitre ne contient que trois fichiers : `main.py`, `article.html` et `script-video.md`. Aucun fichier de ressources n'est nécessaire, puisque toutes les formes sont dessinées par le code.
+Les trois chapitres sont produits dans `cours/pyxel-platformer/bonus-cube/`, un sous-dossier par chapitre, sur le modèle des leçons 2D. Chaque chapitre ne contient que trois fichiers : `main.py`, `article.qmd` et `script-video.md`. Aucun fichier de ressources n'est nécessaire, puisque toutes les formes sont dessinées par le code.
 
 Une limite de production est à connaître : Pyxel Cube s'exécute mais ne se rend pas sans OpenGL. Le rendu n'a donc pas pu être vérifié visuellement comme pour les leçons 2D. La validation a porté sur la logique : un stub de `pyxel` et de `pyxel.cube` rejoue les trois programmes, contrôle les positions, les transformations, la caméra, le score et les textes du HUD, et les signatures employées ont été relues dans `docs/api-reference-cube.md`.
 
@@ -1118,45 +1118,58 @@ La vidéo ne devra pas simplement lire l'article. Elle montrera les décisions d
 
 ## 8.2. Article
 
-Les articles sont écrits en HTML, sans chaîne de production Quarto. Chaque page est autonome et importe la feuille de style commune `cours/pyxel-platformer/styles/article.css`.
+Les articles sont écrits en Quarto Markdown, un fichier `article.qmd` par leçon. Chaque fichier est autonome : son en-tête YAML déclare la langue, la description et la feuille de style commune `cours/pyxel-platformer/styles/article.css`. Le rendu se fait à la demande, avec `quarto render article.qmd` ; il n’y a ni projet Quarto ni configuration globale à maintenir.
 
-Structure d'une page :
+Structure d’un fichier :
 
-```html
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>…</title>
-  <link rel="stylesheet" href="../styles/article.css">
-</head>
-<body>
-  <article class="lesson">
-    <header class="lesson-header">…</header>
-    <nav class="lesson-toc">…</nav>
-    …
-  </article>
-</body>
-</html>
+```markdown
+---
+description: "…"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon N
+:::
+
+# Titre de la leçon
+
+::: {.lesson-subtitle}
+Sous-titre de la leçon
+:::
+:::
+
+## Présentation {#presentation}
+…
+::::
 ```
 
-Les encadrés utilisent des classes explicites :
+Le sommaire n’est plus écrit à la main : Quarto le produit à partir des sections et de leurs identifiants.
+
+Les encadrés utilisent les callouts Quarto, avec un titre en attribut :
 
 | Classe | Usage |
 | --- | --- |
-| `callout callout-note` | information complémentaire |
-| `callout callout-tip` | conseil ou méthode |
-| `callout callout-warning` | erreur fréquente ou piège |
-| `callout callout-important` | règle à ne pas modifier |
+| `callout-note` | information complémentaire |
+| `callout-tip` | conseil ou méthode |
+| `callout-warning` | erreur fréquente ou piège |
+| `callout-important` | règle à ne pas modifier |
 
 Un encadré se présente ainsi :
 
-```html
-<aside class="callout callout-note">
-  <p class="callout-title">Titre de l'encadré</p>
-  <p>Texte de l'encadré.</p>
-</aside>
+```markdown
+::: {.callout-note title="Titre de l’encadré"}
+
+Texte de l’encadré.
+
+:::
 ```
 
 Chaque article comprendra :
@@ -1210,31 +1223,31 @@ cours/
       generer_ressources.py
       res.pyxres
     01-boucle-et-game/
-      article.html
+      article.qmd
       script-video.md
       main.py
     02-ressources-pyxres/
-      article.html
+      article.qmd
       script-video.md
       main.py
       res.pyxres
     03-joueur/
-      article.html
+      article.qmd
       script-video.md
       main.py
       res.pyxres
     ...
     bonus-cube/
       01-premiere-scene/
-        article.html
+        article.qmd
         script-video.md
         main.py
       02-transformations/
-        article.html
+        article.qmd
         script-video.md
         main.py
       03-petit-jeu-3d/
-        article.html
+        article.qmd
         script-video.md
         main.py
 ```
@@ -1242,11 +1255,11 @@ cours/
 Règles appliquées :
 
 - chaque dossier de leçon est autonome : `main.py` et, à partir de la leçon 2, `res.pyxres` peuvent être copiés dans PyxelStudio tels quels ;
-- `article.html` contient l'article en HTML, avec une feuille de style commune `styles/article.css` ;
+- `article.qmd` contient l'article en Quarto Markdown, avec une feuille de style commune `styles/article.css` déclarée dans son en-tête ;
 - `script-video.md` contient le script de la vidéo ;
 - le fichier de ressources de référence est généré dans `outils/`, puis copié dans le dossier de la leçon ;
 - les noms de dossiers pourront être adaptés au support final, mais la règle des deux fichiers du projet 2D reste constante ;
-- les trois chapitres du module bonus ne contiennent que `main.py`, `article.html` et `script-video.md` : aucune ressource externe n'y est chargée.
+- les trois chapitres du module bonus ne contiennent que `main.py`, `article.qmd` et `script-video.md` : aucune ressource externe n'y est chargée.
 - les consignes de production, les conventions de code et les vérifications à exécuter sont décrites dans `cours/AGENTS.md`.
 
 ---

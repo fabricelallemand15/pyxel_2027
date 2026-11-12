@@ -1,0 +1,674 @@
+---
+description: "Détecter le contact entre rectangles, compter les pièces, retirer les objets ramassés et déclencher la défaite"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon 8
+:::
+
+# Règles du jeu et cycle de vie des objets
+
+::: {.lesson-subtitle}
+Détecter le contact entre rectangles, compter les pièces, retirer les objets ramassés et déclencher la défaite
+:::
+
+:::
+
+## Présentation {#presentation}
+
+Les objets existent, mais il ne se passe rien : le joueur peut traverser les pièces et les ennemis sans conséquence. Cette leçon leur donne des règles.
+
+Le contact ne se calcule pas sur les dessins, mais sur les rectangles. Deux rectangles se recouvrent-ils ? La réponse tient en quatre comparaisons. À partir de là, tout s’enchaîne : une pièce touchée disparaît et rapporte un point, un ennemi touché arrête la partie.
+
+Faire disparaître un objet demande une méthode prudente. Retirer un élément d’une liste pendant qu’on la parcourt fait sauter l’élément suivant : les pièces sont donc marquées comme mortes pendant le parcours, puis la liste est reconstruite une fois le parcours terminé. C’est le cycle de vie d’un objet.
+
+## Objectifs {#objectifs}
+
+À la fin de la leçon, vous devez pouvoir :
+
+1. tester le recouvrement de deux rectangles ;
+2. déclencher une action au contact ;
+3. compter des points dans un attribut ;
+4. marquer un objet comme mort avec `is_alive` ;
+5. reconstruire une liste pour retirer les objets morts ;
+6. arrêter le jeu avec un indicateur d’état.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Leçon 7 | Leçon 8 |
+| --- | --- | --- |
+| `Coin` | position et dessin | ajout de `is_alive` |
+| `Game` | listes et boucles | ajout de `score`, `is_game_over`, `collide()`, `check_coins()`, `check_enemies()` |
+| Contact | aucun | règle du recouvrement de rectangles |
+| Pièces | immobiles et inviolables | ramassables, elles disparaissent |
+| Ennemis | inoffensifs | un contact arrête la partie |
+| Affichage | nombre d’objets | score, pièces restantes, écran de défaite |
+| Sons | saut | ajout de la pièce et de la collision |
+
+::: {.callout-note title="Deux notions de collision"}
+
+Le décor utilise `Tilemap.collide()` depuis la leçon 6 : elle corrige un déplacement contre les cases solides. Ici, il s’agit d’autre chose : savoir si deux objets se touchent, sans rien corriger. La méthode `Game.collide()` répond à cette seconde question.
+
+:::
+
+## Le code complet {#le-code-complet}
+
+```python
+import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+]
+COIN_TILE = (3, 1)
+ENEMY_TILE = (4, 0)
+EMPTY_TILE = (5, 5)
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_TILE_X = 0
+PLAYER_TILE_Y = 0
+PLAYER_START_X = 8
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+ENEMY_SPEED = 1
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+COIN_SOUND = 1
+HIT_SOUND = 2
+
+
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.is_alive = True
+
+    def update(self):
+        pass
+
+    def draw(self):
+        tile_x, tile_y = COIN_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Enemy:
+    def __init__(self, x, y, min_x, max_x):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.dx = ENEMY_SPEED
+        self.min_x = min_x
+        self.max_x = max_x
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x < self.min_x:
+            self.x = self.min_x
+            self.dx = ENEMY_SPEED
+        elif self.x > self.max_x:
+            self.x = self.max_x
+            self.dx = -ENEMY_SPEED
+
+    def draw(self):
+        tile_x, tile_y = ENEMY_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
+    def move_player(self, x, y, dx, dy):
+        return self.tilemap.collide(
+            x,
+            y,
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT,
+            dx,
+            dy,
+            SOLID_TILES,
+        )
+
+    def take_coins(self):
+        positions = []
+
+        for tile_y in range(LEVEL_HEIGHT):
+            for tile_x in range(LEVEL_WIDTH):
+                if self.tilemap.pget(tile_x, tile_y) == COIN_TILE:
+                    self.tilemap.pset(tile_x, tile_y, EMPTY_TILE)
+                    positions.append(
+                        (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
+                    )
+
+        return positions
+
+
+class Player:
+    def __init__(self, x, y, level):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+        self.level = level
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+
+        was_falling = self.dy > 0
+        self.dx, self.dy = self.level.move_player(
+            self.x,
+            self.y,
+            self.dx,
+            self.dy,
+        )
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            pyxel.width - self.width,
+        )
+        self.y += self.dy
+
+        self.is_on_ground = was_falling and self.dy == 0
+
+    def draw(self):
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            PLAYER_TILE_X * TILE_SIZE,
+            PLAYER_TILE_Y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Chapitre 8 - but du jeu",
+        )
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+            self.level,
+        )
+
+        self.coins = []
+        for x, y in self.level.take_coins():
+            self.coins.append(Coin(x, y))
+
+        self.enemies = [
+            Enemy(88, 216, 88, 160),
+            Enemy(104, 144, 104, 160),
+        ]
+
+        self.score = 0
+        self.is_game_over = False
+
+        pyxel.playm(MUSIC, loop=True)
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        if self.is_game_over:
+            return
+
+        self.player.update()
+
+        for coin in self.coins:
+            coin.update()
+
+        for enemy in self.enemies:
+            enemy.update()
+
+        self.check_coins()
+        self.check_enemies()
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+        self.level.draw()
+
+        for coin in self.coins:
+            coin.draw()
+
+        for enemy in self.enemies:
+            enemy.draw()
+
+        self.player.draw()
+
+        pyxel.text(
+            4,
+            4,
+            "Chapitre 8 - but du jeu",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            "Gauche et droite : marcher, Espace : sauter",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            20,
+            f"Score : {self.score}  Restantes : {len(self.coins)}",
+            TEXT_COLOR,
+        )
+
+        if self.is_game_over:
+            pyxel.rect(48, 96, 160, 32, pyxel.COLOR_BLACK)
+            pyxel.text(102, 100, "Partie perdue", pyxel.COLOR_RED)
+            pyxel.text(110, 112, f"Score : {self.score}", TEXT_COLOR)
+
+    def collide(self, a, b):
+        return (
+            a.x < b.x + b.width
+            and a.x + a.width > b.x
+            and a.y < b.y + b.height
+            and a.y + a.height > b.y
+        )
+
+    def check_coins(self):
+        for coin in self.coins:
+            if self.collide(self.player, coin):
+                coin.is_alive = False
+                self.score += 1
+                pyxel.play(1, COIN_SOUND)
+
+        self.coins = [coin for coin in self.coins if coin.is_alive]
+
+    def check_enemies(self):
+        for enemy in self.enemies:
+            if self.collide(self.player, enemy):
+                self.is_game_over = True
+                pyxel.play(2, HIT_SOUND)
+
+
+Game()
+```
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Deux rectangles se recouvrent-ils ?
+
+Chaque objet du jeu possède déjà tout ce qu’il faut : `x`, `y`, `width` et `height`. La méthode `collide()` de `Game` compare deux objets :
+
+```python
+def collide(self, a, b):
+    return (
+        a.x < b.x + b.width
+        and a.x + a.width > b.x
+        and a.y < b.y + b.height
+        and a.y + a.height > b.y
+    )
+```
+
+Les deux premières comparaisons portent sur l’axe horizontal, les deux suivantes sur l’axe vertical. Le recouvrement n’existe que si les quatre sont vraies.
+
+| Comparaison | Ce qu’elle vérifie |
+| --- | --- |
+| `a.x < b.x + b.width` | le bord gauche de `a` n’est pas à droite de `b` |
+| `a.x + a.width > b.x` | le bord droit de `a` n’est pas à gauche de `b` |
+| `a.y < b.y + b.height` | le haut de `a` n’est pas sous `b` |
+| `a.y + a.height > b.y` | le bas de `a` n’est pas au-dessus de `b` |
+
+Les inégalités sont strictes : deux objets côte à côte, dont les bords se touchent exactement, ne se recouvrent pas. Un joueur posé sur le sol ne « touche » donc pas le sol au sens de cette méthode, et c’est voulu : sinon il ramasserait indéfiniment la pièce voisine.
+
+::: {.callout-tip title="Une méthode, pas une classe"}
+
+`collide()` ne représente aucun élément du jeu : c’est une opération géométrique. Elle n’a pas besoin d’être un objet, et se contente d’être une méthode de `Game`, l’endroit où les règles sont décidées.
+
+:::
+
+### Une méthode qui accepte deux objets
+
+`collide(self.player, coin)` passe deux instances, et non huit nombres. La méthode se contente de lire `x`, `y`, `width` et `height` : peu importe que l’objet soit un joueur, une pièce ou un ennemi, du moment qu’il possède ces quatre attributs.
+
+C’est ce qui rend la même méthode utilisable partout, et ce qui permettra plus tard de tester une caisse ou une sortie sans réécrire une ligne.
+
+### Ramasser une pièce
+
+```python
+def check_coins(self):
+    for coin in self.coins:
+        if self.collide(self.player, coin):
+            coin.is_alive = False
+            self.score += 1
+            pyxel.play(1, COIN_SOUND)
+
+    self.coins = [coin for coin in self.coins if coin.is_alive]
+```
+
+Trois actions se produisent au contact : la pièce est marquée comme morte, le score augmente, le bruitage se déclenche. La boucle continue sur les pièces suivantes : une seule passe suffit pour ramasser tout ce que le joueur touche.
+
+La suppression, elle, attend la fin du parcours. La dernière ligne reconstruit la liste en ne gardant que les pièces vivantes.
+
+::: {.callout-warning title="Ne jamais retirer un élément pendant le parcours"}
+
+Retirer une pièce dans la boucle qui la parcourt décalerait les éléments suivants, et certaines pièces ne seraient jamais testées :
+
+```python
+for coin in self.coins:
+    if self.collide(self.player, coin):
+        self.coins.remove(coin)
+```
+
+Marquer puis reconstruire évite complètement ce piège.
+
+:::
+
+### La compréhension de liste
+
+La ligne de nettoyage utilise une écriture condensée, appelée compréhension de liste :
+
+```python
+self.coins = [coin for coin in self.coins if coin.is_alive]
+```
+
+Elle se lit de gauche à droite : « une nouvelle liste de `coin`, pour chaque `coin` de l’ancienne liste, si `coin.is_alive` est vrai ». La même opération s’écrit avec une boucle classique :
+
+```python
+alive_coins = []
+for coin in self.coins:
+    if coin.is_alive:
+        alive_coins.append(coin)
+self.coins = alive_coins
+```
+
+Les deux versions produisent le même résultat. La première est plus courte ; la seconde montre mieux les étapes. Utilisez celle que vous lisez le plus facilement.
+
+### Le cycle de vie d’un objet
+
+| Étape | Ce qui se passe |
+| --- | --- |
+| Création | `Coin(x, y)` dans `Game.__init__()`, `is_alive` vaut vrai |
+| Vie | l’objet est mis à jour et dessiné à chaque image |
+| Mort | `is_alive = False` au contact du joueur |
+| Disparition | l’objet quitte la liste à la fin du parcours |
+
+Un objet mort n’est plus dessiné, puisque la liste ne le contient plus. Il n’est plus mis à jour non plus. La variable Python disparaît quand plus personne ne la référence : le programme n’a rien d’autre à faire.
+
+### Déclencher la défaite
+
+```python
+def check_enemies(self):
+    for enemy in self.enemies:
+        if self.collide(self.player, enemy):
+            self.is_game_over = True
+            pyxel.play(2, HIT_SOUND)
+```
+
+Le contact avec un ennemi ne retire pas d’objet : il change l’état du jeu. `is_game_over` est un attribut de `Game`, au même titre que `score`.
+
+Cet indicateur suffit à tout arrêter, car `update()` commence par le consulter :
+
+```python
+def update(self):
+    if pyxel.btnp(pyxel.KEY_Q):
+        pyxel.quit()
+
+    if self.is_game_over:
+        return
+
+    ...
+```
+
+Le mot-clé `return` quitte la méthode immédiatement : le joueur, les pièces et les ennemis cessent d’être mis à jour. Le dessin continue, mais l’image ne bouge plus. La touche `Q` reste active, puisqu’elle est testée avant.
+
+::: {.callout-tip title="Un état, pas une exception"}
+
+Une partie perdue n’est pas une erreur du programme : c’est une situation prévue. Un simple attribut à vrai ou faux suffit à la décrire, sans quitter le jeu.
+
+:::
+
+### L’écran de défaite
+
+```python
+if self.is_game_over:
+    pyxel.rect(48, 96, 160, 32, pyxel.COLOR_BLACK)
+    pyxel.text(102, 100, "Partie perdue", pyxel.COLOR_RED)
+    pyxel.text(110, 112, f"Score : {self.score}", TEXT_COLOR)
+```
+
+Le rectangle noir isole le message du décor. Les deux textes sont placés à la main : un caractère mesure 4 pixels de large, donc « Partie perdue » occupe 52 pixels et commence à `(256 - 52) / 2 = 102`.
+
+Ce bloc se trouve à la fin de `draw()` : il recouvre tout le reste, y compris le joueur.
+
+### Les bruitages
+
+Chaque son utilise un canal différent, pour ne pas couper le précédent.
+
+| Son | Numéro | Canal |
+| --- | --- | --- |
+| Saut | `0` | `0` |
+| Pièce | `1` | `1` |
+| Collision | `2` | `2` |
+
+Pyxel propose quatre canaux. Jouer la pièce sur le canal 0 aurait interrompu le saut en cours.
+
+### L’ordre des vérifications
+
+Dans `update()`, les pièces sont testées avant les ennemis. Si le joueur attrape une pièce et touche un ennemi pendant la même image, la pièce compte puis la partie s’arrête : le score final inclut la pièce ramassée.
+
+Inverser les deux appels ne change rien au déclenchement de la défaite, seulement ce détail de comptage.
+
+::: {.callout-note title="Les accents à l’écran"}
+
+Le titre affiché dit « but du jeu » plutôt que « règles du jeu », et le compteur « Restantes » plutôt que « Pièces » : les accents n’existent pas dans la police (voir la leçon 1).
+
+:::
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+| Point à vérifier | Résultat attendu |
+| --- | --- |
+| Au démarrage | `Score : 0 Restantes : 9` |
+| Contact avec une pièce | La pièce disparaît, le score augmente, un bruit aigu se fait entendre |
+| Repasser sur la même case | Plus de pièce, plus de point |
+| Le compteur | `Score : 3 Restantes : 6` après trois pièces |
+| Contact avec un ennemi | Le jeu s’arrête, le message `Partie perdue` s’affiche |
+| Après la défaite | Les ennemis ne bougent plus, les flèches n’ont plus d’effet |
+| Touche `Q` | Ferme toujours l’application |
+| Bords jointifs | Aucun contact : il faut un réel recouvrement |
+
+Les trois pièces de la plateforme du milieu sont gardées par un ennemi : pour les prendre sans perdre, il faut observer son trajet et sauter par-dessus. C’est le premier vrai défi du jeu.
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+::: {.callout-warning title="Les pièces rapportent des points à chaque image"}
+
+Sans la reconstruction de la liste, la pièce reste dans `self.coins` avec `is_alive` à faux. Tant que le joueur la chevauche, la condition reste vraie : le score grimpe de plusieurs points et le bruitage se répète.
+
+Le score doit augmenter une seule fois, au moment du contact.
+
+:::
+
+::: {.callout-warning title="Les inégalités non strictes"}
+
+Remplacer `<` par `<=` déclare un contact dès que les bords se touchent, sans recouvrement. Le joueur ramasse alors les pièces situées juste au-dessus de sa tête ou juste à côté de lui.
+
+:::
+
+::: {.callout-warning title="Oublier l’arrêt du jeu"}
+
+Sans `if self.is_game_over: return`, le message s’affiche mais la partie continue : les ennemis circulent derrière le texte et le joueur se déplace encore.
+
+:::
+
+::: {.callout-warning title="Confondre les deux collisions"}
+
+`self.level.move_player()` corrige un déplacement contre le décor ; `self.collide()` détecte un contact entre deux objets. Utiliser l’une à la place de l’autre ne produit ni erreur visible ni effet utile.
+
+:::
+
+::: {.callout-warning title="Un ennemi testé une seule fois"}
+
+Placer la vérification en dehors de la boucle ne teste que le premier ennemi de la liste. Les suivants deviennent inoffensifs dès qu’on en ajoute un.
+
+:::
+
+::: {.callout-warning title="Le score affiché ne suit pas"}
+
+Afficher `len(self.coins)` à la place de `self.score` donne le nombre de pièces restantes, pas les points. Les deux informations sont utiles, mais ce ne sont pas les mêmes.
+
+:::
+
+## Expérimentations {#experimentations}
+
+Ces modifications sont facultatives.
+
+### Trois vies
+
+```python
+self.lives = 3
+```
+
+Remplaçant `is_game_over`, le compteur de vies diminue au contact et replace le joueur au départ :
+
+```python
+def check_enemies(self):
+    for enemy in self.enemies:
+        if self.collide(self.player, enemy):
+            self.lives -= 1
+            pyxel.play(2, HIT_SOUND)
+            self.player.x = PLAYER_START_X
+            self.player.y = PLAYER_START_Y
+
+            if self.lives == 0:
+                self.is_game_over = True
+```
+
+La défaite n’arrive qu’à la troisième rencontre. Un contact reste actif à l’image suivante si le joueur n’a pas bougé : le replacement au départ l’éloigne heureusement des ennemis.
+
+### Une pièce qui vaut cinq points
+
+```python
+self.score += 5
+```
+
+Toutes les pièces valent alors cinq points. Une variante consiste à donner un attribut `value` à chaque pièce et à additionner `coin.value`.
+
+### Gagner la partie
+
+```python
+if not self.coins:
+    self.is_game_over = True
+```
+
+Ajouté à la fin de `check_coins()`, ce test arrête la partie quand la dernière pièce est ramassée. Il faut alors changer le message affiché : `Partie gagnée` plutôt que `Partie perdue`, et distinguer les deux cas avec un second attribut.
+
+### Recommencer
+
+```python
+pyxel.load(RESOURCE_FILE)
+```
+
+Recharger les ressources restaure les tuiles de pièce effacées par `take_coins()`. Il faut ensuite reconstruire le niveau, le joueur, les listes et remettre le score à zéro : c’est précisément le sujet des états du jeu, traité plus loin dans la formation.
+
+### Une invulnérabilité temporaire
+
+```python
+if pyxel.frame_count < self.invincible_until:
+    return
+```
+
+Après un contact, une variable note l’image jusqu’à laquelle le joueur est protégé. `pyxel.frame_count` compte les images depuis le lancement : c’est une horloge commode pour les temporisations.
+
+## À retenir {#a-retenir}
+
+- Deux rectangles se recouvrent si quatre comparaisons sont vraies à la fois.
+- Les inégalités strictes évitent de compter un simple contact de bord.
+- Une méthode de `Game` peut comparer deux objets sans connaître leur classe.
+- `is_alive` marque un objet mort ; la liste est reconstruite après le parcours.
+- On ne retire jamais un élément d’une liste pendant qu’on la parcourt.
+- Une compréhension de liste fait la même chose qu’une boucle avec `append()`.
+- Un attribut comme `is_game_over` suffit à arrêter la mise à jour du jeu.
+
+Dans la prochaine leçon, le personnage s’anime : ses quatre images servent enfin, la direction du regard change, et la caméra suit le joueur dans un niveau plus grand que l’écran.
+::::

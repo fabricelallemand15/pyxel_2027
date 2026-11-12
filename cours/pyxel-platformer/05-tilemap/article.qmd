@@ -1,0 +1,495 @@
+---
+description: "Comprendre une tilemap, passer des pixels aux cases et repérer les cases solides"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon 5
+:::
+
+# Le niveau et la tilemap
+
+::: {.lesson-subtitle}
+Comprendre une tilemap, passer des pixels aux cases et repérer les cases solides
+:::
+
+:::
+
+## Présentation {#presentation}
+
+Depuis la leçon 2, le décor est affiché par la classe `Level`, sans que le programme sache de quoi il est fait. Le niveau est alors une image : le joueur peut traverser les plateformes sans que rien ne le remarque.
+
+Cette leçon ouvre la tilemap. Le niveau devient une grille de cases de 8 × 8 pixels, que le programme peut interroger. Chaque case contient une référence vers une tuile de la banque d’images.
+
+La classe `Level` reçoit une méthode `is_solid()` qui répond à une question simple : la case située à telles coordonnées est-elle solide ? Cette question est la base des collisions, qui seront traitées dans la leçon suivante.
+
+Pour rendre ce travail visible, le jeu affiche en permanence la case située sous les pieds du joueur, et indique si elle est solide ou vide.
+
+## Objectifs {#objectifs}
+
+À la fin de la leçon, vous devez pouvoir :
+
+1. décrire une tilemap comme une grille de cases ;
+2. convertir une position en pixels en coordonnées de case ;
+3. lire une case avec `pget()` ;
+4. utiliser l’objet `pyxel.tilemaps[0]` plutôt qu’un numéro ;
+5. définir la liste des tuiles solides ;
+6. interroger le niveau avec une méthode dédiée.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Leçon 4 | Leçon 5 |
+| --- | --- | --- |
+| `Level` | dimensions et dessin | ajout de l’objet tilemap et de `is_solid()` |
+| `pyxel.bltm()` | numéro de tilemap | objet tilemap |
+| Constantes | dimensions et `GROUND_Y` | ajout de `SOLID_TILES` |
+| Affichage | deux lignes de texte | ajout de la case sous les pieds du joueur |
+| Déplacement | gravité et saut | inchangé |
+
+::: {.callout-note title="Aucune collision pour l’instant"}
+
+Le programme sait maintenant si une case est solide, mais il ne s’en sert pas encore pour arrêter le joueur. Le personnage traverse toujours les plateformes.
+
+Cette séparation est volontaire : la leçon 6 confie cette vérification à `collide()`, qui s’appuie sur la même liste de tuiles solides, et corrige enfin les déplacements.
+
+:::
+
+## Le code complet {#le-code-complet}
+
+Le projet contient toujours `main.py` et `res.pyxres`, dans le même dossier.
+
+```python
+import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = (
+    (0, 1),
+    (1, 1),
+    (2, 1),
+)
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_TILE_X = 0
+PLAYER_TILE_Y = 0
+PLAYER_START_X = 40
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
+    def is_solid(self, tile_x, tile_y):
+        tile = self.tilemap.pget(tile_x, tile_y)
+        return tile in SOLID_TILES
+
+
+class Player:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            pyxel.width - self.width,
+        )
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+        self.y += self.dy
+
+        if self.y + self.height >= GROUND_Y:
+            self.y = GROUND_Y - self.height
+            self.dy = 0
+            self.is_on_ground = True
+        else:
+            self.is_on_ground = False
+
+    def draw(self):
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            PLAYER_TILE_X * TILE_SIZE,
+            PLAYER_TILE_Y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Chapitre 5 - niveau",
+        )
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+        )
+
+        pyxel.playm(MUSIC, loop=True)
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.player.update()
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+        self.level.draw()
+
+        tile_x = self.player.x // TILE_SIZE
+        tile_y = (self.player.y + self.player.height) // TILE_SIZE
+
+        if self.level.is_solid(tile_x, tile_y):
+            state = "solide"
+        else:
+            state = "vide"
+
+        pyxel.text(
+            4,
+            4,
+            "Chapitre 5 - niveau",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            "Gauche et droite : marcher, Espace : sauter",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            20,
+            f"Case {tile_x},{tile_y} : {state}",
+            TEXT_COLOR,
+        )
+
+        self.player.draw()
+
+
+Game()
+```
+
+Le résultat attendu :
+
+- le niveau de la leçon 4, identique ;
+- le joueur se déplace et saute comme avant ;
+- une troisième ligne de texte indique la case sous les pieds et son état ;
+- au repos, cette ligne affiche `Case 5,28 : solide` ;
+- en saut, la case affichée change et peut indiquer `solide` au passage d’une plateforme.
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Une grille de cases
+
+La tilemap 0 mesure 32 cases de large et 32 cases de haut. Chaque case mesure 8 pixels : la tilemap couvre donc exactement 256 × 256 pixels, la taille de la fenêtre.
+
+Une case ne contient pas un dessin, mais les coordonnées d’une tuile de la banque d’images. Par exemple :
+
+| Contenu de la case | Résultat à l’écran | Solide |
+| --- | --- | --- |
+| (0, 1) | Dessus du sol | oui |
+| (1, 1) | Remplissage du sol | oui |
+| (2, 1) | Plateforme | oui |
+| (3, 1) | Pièce | non |
+| (4, 1) | Buisson | non |
+| (5, 5) | Rien, zone transparente | non |
+
+### Passer des pixels aux cases
+
+Le joueur est positionné en pixels, la tilemap se lit en cases. La conversion utilise une division entière par la taille d’une case :
+
+```python
+tile_x = x // TILE_SIZE
+tile_y = y // TILE_SIZE
+```
+
+Quelques exemples avec des cases de 8 pixels :
+
+| Position en pixels | Case | Calcul |
+| --- | --- | --- |
+| x = 40 | 5 | `40 // 8` |
+| x = 47 | 5 | `47 // 8` |
+| x = 48 | 6 | `48 // 8` |
+| y = 224 | 28 | `224 // 8` |
+
+La division entière `//` donne le numéro de la case : toutes les positions d’une même case de 8 pixels renvoient le même numéro.
+
+::: {.callout-tip title="Toujours diviser par TILE_SIZE"}
+
+La constante `TILE_SIZE` vaut 8 et décrit la taille d’une case. Écrire `// 8` directement fonctionne, mais rend le code dépendant d’une valeur écrite en dur.
+
+Utiliser la constante garde une seule valeur à modifier si la taille des tuiles changeait.
+
+:::
+
+### L’objet tilemap
+
+```python
+self.tilemap = pyxel.tilemaps[0]
+```
+
+`pyxel.tilemaps[0]` désigne la première tilemap chargée depuis `res.pyxres`. C’est un objet, pas un simple numéro.
+
+La classe `Level` conserve cet objet dans un attribut. Le dessin l’utilise directement :
+
+```python
+pyxel.bltm(
+    0,
+    0,
+    self.tilemap,
+    0,
+    0,
+    self.width,
+    self.height,
+)
+```
+
+`pyxel.bltm()` accepte un numéro de tilemap ou un objet. L’objet est préférable ici : si le programme utilisait plusieurs tilemaps, un attribut suffirait à changer de niveau.
+
+### Lire une case avec pget()
+
+```python
+tile = self.tilemap.pget(tile_x, tile_y)
+```
+
+`pget()` renvoie les coordonnées de la tuile contenue dans la case, sous la forme d’un couple `(image_tx, image_ty)`.
+
+L’ordre des paramètres est celui de toutes les coordonnées de Pyxel : l’horizontale d’abord, la verticale ensuite. Ces coordonnées sont exprimées en cases, pas en pixels.
+
+Pour la case (5, 28), `pget(5, 28)` renvoie `(0, 1)` : la tuile du dessus du sol.
+
+### Reconnaître une case solide
+
+```python
+SOLID_TILES = (
+    (0, 1),
+    (1, 1),
+    (2, 1),
+)
+```
+
+Les tuiles solides sont regroupées dans une constante. Le programme compare le contenu d’une case à cette liste :
+
+```python
+def is_solid(self, tile_x, tile_y):
+    tile = self.tilemap.pget(tile_x, tile_y)
+    return tile in SOLID_TILES
+```
+
+L’opérateur `in` vérifie si une valeur figure dans un ensemble. Ici, il indique si la tuile lue fait partie des tuiles solides.
+
+Ajouter une tuile solide revient donc à ajouter un couple dans la constante, sans modifier la méthode.
+
+::: {.callout-note title="Une question, pas une action"}
+
+`is_solid()` ne déplace rien et ne corrige rien. Elle répond uniquement par vrai ou faux.
+
+Cette forme est volontaire : une méthode qui répond à une question est facile à réutiliser pour le sol, les murs et les plafonds.
+
+:::
+
+### Le contrôle affiché
+
+Pour observer le résultat, le jeu calcule la case située sous les pieds du joueur :
+
+```python
+tile_x = self.player.x // TILE_SIZE
+tile_y = (self.player.y + self.player.height) // TILE_SIZE
+```
+
+Puis il interroge le niveau et affiche le résultat :
+
+```python
+if self.level.is_solid(tile_x, tile_y):
+    state = "solide"
+else:
+    state = "vide"
+
+pyxel.text(
+    4,
+    20,
+    f"Case {tile_x},{tile_y} : {state}",
+    TEXT_COLOR,
+)
+```
+
+Au repos, le joueur est posé sur le sol : ses pieds sont à la coordonnée 224, soit la case 28, et l’affichage indique `solide`.
+
+Pendant un saut, les pieds traversent les cases situées plus haut. L’affichage peut donc indiquer `solide` au moment où le joueur passe devant une plateforme, alors qu’il n’est pas arrêté : la collision n’est pas encore traitée.
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+| Point à vérifier | Résultat attendu |
+| --- | --- |
+| Au démarrage | `Case 5,28 : solide` |
+| Déplacement vers la droite | Le numéro de case augmente |
+| Déplacement vers la gauche | Le numéro de case diminue |
+| Saut | Le numéro de case diminue, l’état alterne |
+| Passage devant une plateforme | `solide` affiché, sans arrêt du joueur |
+| Case sous une pièce | `vide` affiché |
+| Déplacement et saut | Identiques à la leçon 4 |
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+::: {.callout-warning title="Les coordonnées de pget() sont des cases"}
+
+Passer directement des pixels à `pget()` donne une case très éloignée, presque toujours vide :
+
+```python
+tile = self.tilemap.pget(40, 224)
+```
+
+Il faut convertir les positions en cases avant l’appel.
+
+:::
+
+::: {.callout-warning title="Une case est lue au-dessus du sol"}
+
+Utiliser `self.player.y` au lieu de `self.player.y + self.player.height` lit la case du haut du personnage, pas celle de ses pieds. L’affichage indique alors `vide` même lorsque le joueur est posé.
+
+:::
+
+::: {.callout-warning title="Une tuile solide est oubliée"}
+
+Si la tuile du remplissage du sol manque dans `SOLID_TILES`, les cases situées sous la surface seront considérées comme vides. La liste doit contenir toutes les tuiles qui arrêtent le joueur.
+
+:::
+
+::: {.callout-warning title="La pièce devient solide"}
+
+Ajouter `(3, 1)` dans `SOLID_TILES` rend la pièce solide : le joueur ne pourra plus la traverser. Une pièce se ramasse, elle ne s’escalade pas.
+
+:::
+
+## Expérimentations {#experimentations}
+
+Ces modifications sont facultatives.
+
+### Rendre le buisson solide
+
+```python
+SOLID_TILES = (
+    (0, 1),
+    (1, 1),
+    (2, 1),
+    (4, 1),
+)
+```
+
+L’affichage indique alors `solide` au-dessus des buissons. Aucun déplacement n’est encore modifié : cette constante ne servira qu’à la leçon suivante.
+
+### Afficher toutes les cases solides
+
+Ajoutez dans `Level` une méthode qui parcourt la grille et dessine un petit repère sur les cases solides :
+
+```python
+def draw_solid_tiles(self):
+    for tile_y in range(LEVEL_HEIGHT):
+        for tile_x in range(LEVEL_WIDTH):
+            if self.is_solid(tile_x, tile_y):
+                pyxel.rect(
+                    tile_x * TILE_SIZE,
+                    tile_y * TILE_SIZE,
+                    2,
+                    2,
+                    pyxel.COLOR_RED,
+                )
+```
+
+Appelez cette méthode à la fin de `Level.draw()`. Les cases solides apparaissent en rouge, ce qui vérifie la liste d’un seul coup d’œil.
+
+### Effacer une case
+
+```python
+self.tilemap.pset(5, 28, (5, 5))
+```
+
+Cette instruction remplace le contenu d’une case par la tuile vide. La case disparaît du dessin, mais le joueur reste posé à la hauteur du sol : la collision n’est toujours pas traitée.
+
+### Changer la case observée
+
+```python
+tile_x = (self.player.x + self.player.width) // TILE_SIZE
+```
+
+L’affichage suit alors le bord droit du joueur au lieu de son bord gauche.
+
+## À retenir {#a-retenir}
+
+- Une tilemap est une grille de cases de 8 × 8 pixels.
+- Chaque case contient les coordonnées d’une tuile de la banque d’images.
+- Les pixels se convertissent en cases avec `// TILE_SIZE`.
+- `pyxel.tilemaps[0]` est un objet que l’on peut stocker et passer à `pyxel.bltm()`.
+- `pget()` lit une case, `pset()` la modifie.
+- `SOLID_TILES` regroupe les tuiles qui arrêtent le joueur.
+- `is_solid()` répond à une question, sans modifier le jeu.
+
+Dans la prochaine leçon, la liste des tuiles solides sert à corriger les déplacements : le joueur s’arrête sur les plateformes au lieu de les traverser.
+::::

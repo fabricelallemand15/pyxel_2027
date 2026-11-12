@@ -509,7 +509,7 @@ pièce devenue solide        -> (3, 1) ajoutée par erreur
 - Afficher en incrustation la conversion pixels vers cases avec deux ou trois exemples.
 - Faire apparaître le tableau des tuiles solides au moment où `SOLID_TILES` est écrit.
 - Garder l’affichage du contrôle visible pendant toute la phase de vérification.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 
