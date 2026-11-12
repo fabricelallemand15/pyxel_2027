@@ -416,7 +416,7 @@ la caméra appartient à la scène
 - Montrer une fois l’expérience ratée : la rotation placée sur les enfants.
 - Faire varier la hauteur de la caméra en direct, jusqu’aux bornes, pour montrer `clamp()`.
 - Faire l’exercice du second anneau en direct.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

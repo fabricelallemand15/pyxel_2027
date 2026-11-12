@@ -572,5 +572,5 @@ Défi : modifier le déplacement automatique du joueur.
 - Le joueur ne dépasse pas les bords de l’écran.
 - Le joueur reste posé sur le sol.
 - Le numéro d’image est visible.
-- Le code présenté dans la vidéo est identique à celui de l’article `article.html`.
+- Le code présenté dans la vidéo est identique à celui de l’article `article.qmd`.
 - La vidéo ne suppose pas que la POO ou le fichier `.pyxres` ont déjà été étudiés.

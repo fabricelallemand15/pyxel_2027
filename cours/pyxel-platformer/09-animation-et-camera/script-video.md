@@ -630,7 +630,7 @@ animation figée        -> choose_tile() appelée trop tôt
 - Comparer visuellement le sprite normal et le sprite retourné, en gardant le rectangle visible.
 - Montrer la tilemap entière avec le cadre de la fenêtre avant d’introduire la caméra.
 - Garder l’interface visible pendant toute la phase de défilement.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

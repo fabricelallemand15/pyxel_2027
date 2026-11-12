@@ -701,7 +701,7 @@ ciel noir -> clé de transparence absente de bltm
 - Montrer la tilemap avant et après `take_coins()` avant de parler du rechargement.
 - Montrer explicitement la deuxième partie sans `pyxel.load()`, puis avec.
 - Garder l’interface visible pendant toute la phase de vérification.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

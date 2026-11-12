@@ -701,7 +701,7 @@ deuxième partie vide -> pyxel.load() absent
 - Afficher `text_x()` puis, en comparaison, les colonnes écrites à la main de la leçon 10.
 - Afficher les deux écrans de fin côte à côte pour montrer le code commun.
 - Garder le tableau des quatre constantes visible pendant l’explication de la difficulté.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

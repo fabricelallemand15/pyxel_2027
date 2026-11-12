@@ -593,7 +593,7 @@ aucun son                         -> ressources non chargées ou mauvais numéro
 - Afficher le schéma des paramètres de `blt()` et de `bltm()` en incrustation.
 - Laisser la musique audible pendant les phases de saisie de code, à volume réduit.
 - Utiliser un cadrage rapproché de l’éditeur de ressources.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

@@ -536,7 +536,7 @@ liste modifiée pendant le parcours -> remove() dans la boucle
 - Afficher en incrustation le tableau case vers pixels pour deux ou trois pièces.
 - Faire apparaître la différence entre une tuile du décor et un objet au moment de l’effacement.
 - Garder le compteur d’objets visible pendant toute la phase de vérification.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

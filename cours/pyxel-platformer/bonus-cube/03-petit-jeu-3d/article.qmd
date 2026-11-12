@@ -1,0 +1,456 @@
+---
+description: "Piloter un cube dans un arène 3D, ramasser des gemmes, suivre le joueur avec la caméra et afficher un score"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Module bonus · Cube 3
+:::
+
+# Un petit jeu 3D
+
+::: {.lesson-subtitle}
+Déplacer un cube, ramasser des gemmes, suivre le joueur avec la caméra et gérer une fin de partie
+:::
+
+:::
+
+## Présentation {#presenter}
+
+Le chapitre précédent faisait tourner un objet décoratif. Celui-ci en fait un jeu : un cube que l’on pilote aux flèches, six gemmes à ramasser, un score, une caméra qui suit, et un écran de victoire.
+
+La structure reste la même que dans le parcours 2D : un état de partie, des règles, un affichage. Ce qui change est la façon de stocker les positions. En 2D, on manipulait deux nombres, `x` et `y`. Ici, un `Vec3` regroupe les trois coordonnées, et une transformation le traduit pour la scène.
+
+Le jeu tient dans deux dimensions d’action, le sol, et une troisième pour la décoration. Il se joue donc comme un jeu vu de dessus, mais dessiné en perspective : pas de saut, pas de gravité, pas de chute.
+
+::: {.callout-note title="Un jeu, trois classes"}
+
+`Player` sait se déplacer, `Gem` sait tourner et disparaître, `Scene` connaît les règles. Cette séparation est la même que celle des chapitres 2D : chaque classe répond à une question, la scène arbitre.
+
+:::
+
+## Objectifs {#objectifs}
+
+À la fin du chapitre, vous devez pouvoir :
+
+1. déplacer un objet sur le plan du sol avec les quatre flèches ;
+2. borner un déplacement pour garder le joueur dans une arène ;
+3. mesurer une distance entre deux points de l’espace ;
+4. retirer un objet de l’arbre et le remplacer à la partie suivante ;
+5. désactiver un nœud quand la partie est gagnée ;
+6. faire suivre le joueur par une caméra ;
+7. superposer une interface 2D à une scène 3D.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Cube 2 | Cube 3 |
+| --- | --- | --- |
+| Déplacement | rotation automatique | translation au clavier, bornée |
+| Caméra | tourne autour d’un objet fixe | suit le joueur, orientation fixe |
+| Objets | quatre cubes décoratifs | six gemmes à ramasser |
+| Collision | aucune | distance entre deux `Vec3` |
+| Règles | aucune | score, victoire, redémarrage |
+| Affichage | scène seule | scène et textes 2D superposés |
+
+## Le code complet {#le-code-complet}
+
+```python
+import pyxel
+from pyxel.cube import Camera, Mat4, Node, Shading, Vec3
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+FONT_WIDTH = 4
+BACKGROUND_COLOR = pyxel.COLOR_BLACK
+
+GROUND_SIZE = 200.0
+GROUND_COLOR = pyxel.COLOR_GREEN
+ARENA_SIZE = 80.0
+
+PLAYER_SIZE = 16.0
+PLAYER_COLOR = pyxel.COLOR_CYAN
+PLAYER_SPEED = 2.0
+PLAYER_START = Vec3(0.0, PLAYER_SIZE / 2, 0.0)
+
+GEM_SIZE = 10.0
+GEM_COLOR = pyxel.COLOR_YELLOW
+GEM_HEIGHT = 12.0
+GEM_RADIUS = 14.0
+GEM_POSITIONS = [
+    Vec3(-56.0, GEM_HEIGHT, 0.0),
+    Vec3(-28.0, GEM_HEIGHT, -48.0),
+    Vec3(28.0, GEM_HEIGHT, -48.0),
+    Vec3(56.0, GEM_HEIGHT, 0.0),
+    Vec3(28.0, GEM_HEIGHT, 48.0),
+    Vec3(-28.0, GEM_HEIGHT, 48.0),
+]
+
+CAMERA_HEIGHT = 70.0
+CAMERA_DISTANCE = 90.0
+
+TEXT_COLOR = pyxel.COLOR_WHITE
+
+
+class Ground(Node):
+    def on_draw(self):
+        self.box(
+            Mat4.from_translation(Vec3(0.0, -1.0, 0.0)),
+            Vec3(GROUND_SIZE, 2.0, GROUND_SIZE),
+            GROUND_COLOR,
+        )
+
+
+class Player(Node):
+    def __init__(self):
+        super().__init__()
+        self.position = PLAYER_START
+        self.transform = Mat4.from_translation(PLAYER_START)
+
+    def on_update(self):
+        dx = 0
+        if pyxel.btn(pyxel.KEY_LEFT):
+            dx = -PLAYER_SPEED
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            dx = PLAYER_SPEED
+
+        dz = 0
+        if pyxel.btn(pyxel.KEY_UP):
+            dz = -PLAYER_SPEED
+        elif pyxel.btn(pyxel.KEY_DOWN):
+            dz = PLAYER_SPEED
+
+        self.position = Vec3(
+            pyxel.clamp(
+                self.position.x + dx,
+                -ARENA_SIZE,
+                ARENA_SIZE,
+            ),
+            self.position.y,
+            pyxel.clamp(
+                self.position.z + dz,
+                -ARENA_SIZE,
+                ARENA_SIZE,
+            ),
+        )
+        self.transform = Mat4.from_translation(self.position)
+
+    def on_draw(self):
+        self.box(
+            Mat4.IDENTITY,
+            Vec3(PLAYER_SIZE, PLAYER_SIZE, PLAYER_SIZE),
+            PLAYER_COLOR,
+        )
+
+
+class Gem(Node):
+    def __init__(self, position):
+        super().__init__()
+        self.position = position
+        self.is_taken = False
+
+    def on_update(self):
+        spin = Mat4.from_euler(
+            Vec3(0.0, pyxel.frame_count * 2.0, 0.0),
+        )
+        self.transform = Mat4.from_translation(self.position) * spin
+
+    def on_draw(self):
+        if not self.is_taken:
+            self.box(
+                Mat4.IDENTITY,
+                Vec3(GEM_SIZE, GEM_SIZE, GEM_SIZE),
+                GEM_COLOR,
+            )
+
+
+class Scene(Node):
+    def __init__(self):
+        super().__init__()
+
+        self.shading = Shading(pyxel.colors)
+
+        self.camera = Camera()
+        self.camera.clear_color = BACKGROUND_COLOR
+
+        self.add_child(Ground())
+
+        self.player = Player()
+        self.add_child(self.player)
+
+        self.gems = []
+        self.start_game()
+
+    def start_game(self):
+        for gem in self.gems:
+            self.remove_child(gem)
+
+        self.gems = []
+
+        for position in GEM_POSITIONS:
+            gem = Gem(position)
+            self.add_child(gem)
+            self.gems.append(gem)
+
+        self.player.position = PLAYER_START
+        self.player.transform = Mat4.from_translation(PLAYER_START)
+        self.player.active = True
+
+        self.score = 0
+        self.is_won = False
+
+    def update_camera(self):
+        target = self.player.position
+        eye = Vec3(
+            target.x,
+            target.y + CAMERA_HEIGHT,
+            target.z + CAMERA_DISTANCE,
+        )
+        self.camera.transform = Mat4.look_at(eye, target)
+
+    def on_update(self):
+        if self.is_won:
+            if pyxel.btnp(pyxel.KEY_SPACE):
+                self.start_game()
+            return
+
+        for gem in self.gems:
+            if gem.is_taken:
+                continue
+
+            distance = self.player.position.distance_to(gem.position)
+
+            if distance < GEM_RADIUS:
+                gem.is_taken = True
+                self.score += 1
+
+        if self.score == len(self.gems):
+            self.is_won = True
+            self.player.active = False
+
+
+class App:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Cube 3 - petit jeu 3D",
+        )
+
+        self.scene = Scene()
+
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.scene.update()
+
+    def draw(self):
+        self.scene.update_camera()
+        self.scene.draw(0, 0, pyxel.width, pyxel.height)
+
+        score = f"Score : {self.scene.score}"
+        pyxel.text(4, 4, score, TEXT_COLOR)
+
+        if self.scene.is_won:
+            pyxel.rect(48, 96, 160, 48, pyxel.COLOR_BLACK)
+            pyxel.text(self.text_x("Victoire"), 104, "Victoire", TEXT_COLOR)
+            pyxel.text(self.text_x(score), 116, score, TEXT_COLOR)
+            hint = "Espace : rejouer"
+            pyxel.text(self.text_x(hint), 128, hint, TEXT_COLOR)
+
+    def text_x(self, text):
+        return (SCREEN_WIDTH - FONT_WIDTH * len(text)) // 2
+
+
+App()
+```
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Une position, puis une transformation
+
+Le joueur garde deux choses : `self.position`, un `Vec3` qui décrit sa place, et `self.transform`, la matrice qui la traduit pour la scène. À chaque image, l’une suit l’autre :
+
+```python
+self.position = Vec3(...)
+self.transform = Mat4.from_translation(self.position)
+```
+
+Pourquoi ce doublon ? Parce que les deux formes servent à des calculs différents. Le `Vec3` s’additionne, se compare et se borne facilement ; la matrice, elle, est ce que la scène comprend. Garder le `Vec3` comme source de vérité et la matrice comme conséquence évite de relire une matrice pour avancer d’un pas.
+
+### Se déplacer sans sortir de l’arène
+
+Les quatre flèches remplissent deux variables, `dx` et `dz`, et le déplacement est borné par `pyxel.clamp()` :
+
+```python
+self.position = Vec3(
+    pyxel.clamp(self.position.x + dx, -ARENA_SIZE, ARENA_SIZE),
+    self.position.y,
+    pyxel.clamp(self.position.z + dz, -ARENA_SIZE, ARENA_SIZE),
+)
+```
+
+L’arène est un carré de 160 unités de côté, soit 80 de chaque côté de l’origine, alors que le sol dessiné mesure 200 unités : le joueur s’arrête avant le bord, sur une surface toujours visible. La hauteur `y` n’est jamais modifiée : le joueur reste collé au sol, à la moitié de sa hauteur.
+
+Une touche enfoncée donne un déplacement de deux unités par image, soit 60 unités par seconde. Deux touches enfoncées ensemble donnent un déplacement en diagonale, un peu plus rapide qu’un déplacement droit : c’est un compromis acceptable pour un jeu de ramassage, et une ligne à ajouter si l’on veut une vitesse constante dans toutes les directions.
+
+### Ramasser une gemme
+
+Chaque gemme connaît sa position et un indicateur `is_taken`. La scène compare les positions à chaque image :
+
+```python
+distance = self.player.position.distance_to(gem.position)
+
+if distance < GEM_RADIUS:
+    gem.is_taken = True
+    self.score += 1
+```
+
+`distance_to()` renvoie la longueur du segment entre deux points de l’espace. Ici, la comparaison se fait en trois dimensions, ce qui compte : le joueur occupe `y = 8` et les gemmes `y = 12`. Sur le plan du sol, la portée réelle est donc un peu inférieure à 14, et l’on ramasse la gemme en passant près d’elle, pas seulement en la touchant du premier coup. Un rayon de 14 unités pour des objets de 16 et 10 unités de côté donne une règle indulgente, adaptée à un jeu d’enfant.
+
+La gemme reste dans l’arbre une fois ramassée : elle cesse simplement d’être dessinée, ce qui suffit. La retirer pendant la partie serait possible, mais l’arbre se modifierait pendant son propre parcours, et la règle du chapitre 2 s’applique : on ne change pas la structure de l’arbre au milieu d’une mise à jour.
+
+### Gagner, puis rejouer
+
+Quand le score atteint le nombre de gemmes, la scène passe en victoire et désactive le joueur :
+
+```python
+if self.score == len(self.gems):
+    self.is_won = True
+    self.player.active = False
+```
+
+`active` est une propriété de `Node` : quand elle vaut `False`, le nœud et ses descendants ne sont plus mis à jour. Le joueur reste visible, mais il ne répond plus aux flèches : le cube s’immobilise sur l’image de victoire. C’est plus propre qu’un test dans chaque déplacement, et c’est réversible d’une ligne.
+
+La barre d’espace relance une partie. `start_game()` commence par retirer les anciennes gemmes de l’arbre avec `remove_child()`, puis en recrée six, remet le joueur au centre, réactive le joueur et remet le score à zéro. Les règles du jeu tiennent donc dans une seule méthode, appelée au démarrage et à chaque redémarrage.
+
+::: {.callout-warning title="Les trois remises à zéro"}
+
+Un redémarrage incomplet se repère tout de suite : le joueur reste immobile si `active` n’est pas remis à `True`, l’écran de victoire reste affiché si `is_won` n’est pas remis à `False`, et le score repart faux s’il n’est pas remis à zéro. Ces trois lignes sont dans `start_game()`, à côté du reste.
+
+:::
+
+### Une caméra qui suit
+
+La caméra n’est plus fixe ni pilotée : elle se place chaque image au-dessus et derrière le joueur.
+
+```python
+target = self.player.position
+eye = Vec3(
+    target.x,
+    target.y + CAMERA_HEIGHT,
+    target.z + CAMERA_DISTANCE,
+)
+self.camera.transform = Mat4.look_at(eye, target)
+```
+
+Le point visé est le joueur lui-même ; l’œil est 70 unités plus haut et 90 unités plus loin sur `z`. L’angle de vue ne change jamais : le joueur se déplace dans un décor dont l’orientation reste stable, ce qui évite de désorienter le joueur humain.
+
+`update_camera()` est appelée depuis `App.draw()`, juste avant `scene.draw()`. L’ordre a son importance : la caméra se règle sur la position que la mise à jour vient de calculer, sans retard d’une image. Placer cet appel dans `Scene.on_update()` fonctionnerait aussi, mais avec une image de décalage, car les enfants d’un nœud sont mis à jour après lui.
+
+::: {.callout-tip title="Un texte 2D sur une image 3D"}
+
+Le score et l’écran de victoire utilisent `pyxel.text()` et `pyxel.rect()`, comme dans le parcours 2D. Le dessin se fait après `scene.draw()` : ce qui est écrit ensuite se retrouve au-dessus. La police reste la police ASCII 4 sur 6, donc sans accents, et les colonnes se calculent avec `text_x()`.
+
+:::
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+1. La fenêtre s’intitule « Cube 3 - petit jeu 3D » et le score affiche zéro en haut à gauche.
+2. Six gemmes jaunes tournent sur elles-mêmes autour du joueur.
+3. Les quatre flèches déplacent le cube coloré ; il s’arrête à 80 unités du centre, bien avant le bord du sol.
+4. La caméra garde le joueur au centre de l’image pendant tout le déplacement.
+5. Passer sur une gemme fait gagner un point et fait disparaître la gemme.
+6. La sixième gemme fait apparaître le message de victoire, avec le score final.
+7. La barre d’espace relance une partie complète : six gemmes, score à zéro, joueur au centre.
+8. La touche `Q` ferme la fenêtre, en jeu comme sur l’écran de victoire.
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+| Symptôme | Cause | Correction |
+| --- | --- | --- |
+| aucune gemme visible | `self.add_child(gem)` oublié | accrocher chaque gemme à la scène |
+| score bloqué à zéro | distance comparée à une valeur trop petite | augmenter `GEM_RADIUS` |
+| joueur qui traverse les bords | `pyxel.clamp()` absent | borner `x` et `z` |
+| caméra qui ne bouge pas | `update_camera()` jamais appelée | l’appeler à chaque image, avant le dessin |
+| textes cachés par la scène | `pyxel.text()` avant `scene.draw()` | dessiner la scène d’abord, les textes ensuite |
+| victoire affichée dès le départ | `is_won` non remis à `False` | réinitialiser dans `start_game()` |
+| joueur immobile après un redémarrage | `active` resté à `False` | réactiver le joueur dans `start_game()` |
+| gemmes qui s’accumulent | `remove_child()` oublié au redémarrage | vider l’arbre avant de recréer |
+
+## Personnaliser le jeu {#experimentations}
+
+| Idée | Où intervenir |
+| --- | --- |
+| Changer la vitesse du joueur | `PLAYER_SPEED` |
+| Agrandir l’arène | `ARENA_SIZE`, puis `GEM_POSITIONS` |
+| Ajouter des gemmes | `GEM_POSITIONS` : le score et la victoire suivent |
+| Rendre le ramassage plus strict | `GEM_RADIUS` |
+| Placer la caméra plus haut | `CAMERA_HEIGHT` |
+| Voir le joueur de plus loin | `CAMERA_DISTANCE` |
+| Faire tourner la caméra au clavier | reprendre `yaw` et `height` du chapitre 2 |
+| Ajouter un chronomètre | `pyxel.frame_count` divisé par 30, affiché dans le HUD |
+| Ajouter un compte à rebours et une défaite | un second état dans `Scene`, comme au chapitre 8 |
+| Changer les couleurs | `PLAYER_COLOR`, `GEM_COLOR`, `GROUND_COLOR` |
+
+Un exercice complet : ajouter une septième gemme en hauteur, à `y = 40`, et une touche qui fait sauter le joueur. Sans gravité, le saut se résume à modifier `y` puis à le ramener à sa valeur de départ ; le ramassage en trois dimensions fonctionne alors sans changement, puisque `distance_to()` tient déjà compte de la hauteur.
+
+## Aller plus loin {#aller-plus-loin}
+
+Trois outils de Pyxel Cube n’ont pas servi dans ce chapitre. Ils sont faits pour la suite, quand un projet demande de la physique ou des modèles dessinés à la main.
+
+### Les collisions physiques
+
+`Collider` ajoute à un nœud une forme de collision, une masse, une gravité et un rebond. La scène se charge alors des contacts, et `on_collide(other, contact)` prévient les nœuds concernés.
+
+```python
+player.collider = Collider(radius=8, mass=1, gravity=0)
+floor.collider = Collider(size=Vec3(200, 2, 200), mass=0)
+```
+
+Une masse nulle rend un objet immobile : c’est ainsi qu’on déclare un sol. Une gravité nulle retire l’objet de la chute. Avec ces deux réglages, un jeu de plateforme 3D devient possible, mais il demande du réglage : la physique pardonne moins que la règle de distance de ce chapitre.
+
+### Les modèles importés
+
+`Mesh.from_glb()` charge un fichier `.glb` exporté par Blockbench, l’éditeur de modèles conseillé par Pyxel. Le modèle s’ajoute à un nœud par `Node.from_mesh()`, ce qui laisse la transformation et les déplacements au nœud, et la géométrie au modèle.
+
+```python
+mesh = Mesh.from_glb("assets/mon_modele.glb")
+self.add_child(Node.from_mesh(mesh))
+```
+
+Le dossier `assets` doit accompagner le `main.py` : à partir de ce point, le projet n’est plus un fichier unique. C’est une contrainte à peser avant de commencer, surtout pour un rendu de concours où deux fichiers sont attendus.
+
+### Les autres primitives
+
+Pyxel Cube sait aussi dessiner une sphère avec `sphere()`, un plan texturé avec `plane()`, et les arêtes d’une boîte avec `boxb()`. Pour un jeu d’arcade, trois primitives et une caméra bien placée suffisent souvent, et le rendu garde l’aspect net des jeux 8 bits.
+
+::: {.callout-important title="Le bon ordre d’apprentissage"}
+
+Un jeu qui fonctionne avec des boîtes vaut mieux qu’un jeu qui ne démarre pas faute de modèle. Commencez par les primitives, réglez les déplacements et la caméra, puis remplacez une boîte par un modèle quand les règles tiennent debout.
+
+:::
+
+## À retenir {#a-retenir}
+
+- Un `Vec3` garde la position, `Mat4.from_translation()` la transmet à la scène.
+- `pyxel.clamp()` garde le joueur dans l’arène.
+- `distance_to()` mesure un écart en trois dimensions, pas seulement sur le sol.
+- Une gemme ramassée cesse d’être dessinée ; l’arbre ne change pas pendant la partie.
+- `active = False` fige un nœud sans le faire disparaître.
+- Une caméra qui suit vise le joueur et garde une orientation stable.
+- Le HUD 2D se dessine après la scène 3D.
+- `Collider`, `Mesh.from_glb()` et Blockbench sont les outils du projet suivant.
+
+Le module bonus s’arrête ici. Vous savez maintenant écrire une scène, organiser des nœuds, placer une caméra et faire tourner un jeu complet en trois dimensions. Le parcours 2D et ce module partagent la même exigence : un petit jeu terminé vaut mieux qu’un grand jeu rêvé.
+::::

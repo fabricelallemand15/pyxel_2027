@@ -62,7 +62,7 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 11 — Préparation Nuit du Code | `11-nuit-du-code/` | produite |
 | Bonus — Pyxel Cube (3 chapitres) | `bonus-cube/` | produite |
 
-Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.html`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute. Le module bonus fait exception : ses trois chapitres ne chargent aucune ressource, donc aucun fichier `res.pyxres` ne les accompagne.
+Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.qmd`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute. Le module bonus fait exception : ses trois chapitres ne chargent aucune ressource, donc aucun fichier `res.pyxres` ne les accompagne.
 
 ## 5. Arborescence et nommage
 
@@ -76,26 +76,26 @@ cours/
       generer_ressources.py
       res.pyxres
     01-boucle-et-game/
-      article.html
+      article.qmd
       script-video.md
       main.py
     02-ressources-pyxres/
-      article.html
+      article.qmd
       script-video.md
       main.py
       res.pyxres
     ...
     bonus-cube/
       01-premiere-scene/
-        article.html
+        article.qmd
         script-video.md
         main.py
       02-transformations/
-        article.html
+        article.qmd
         script-video.md
         main.py
       03-petit-jeu-3d/
-        article.html
+        article.qmd
         script-video.md
         main.py
 ```
@@ -105,6 +105,8 @@ Règles :
 - nom de dossier de leçon : `NN-nom-court`, numéro sur deux chiffres, mots en minuscules séparés par des tirets ;
 - un dossier de leçon est autonome : on doit pouvoir copier `main.py` et `res.pyxres` dans PyxelStudio sans rien chercher ailleurs ;
 - `res.pyxres` est généré dans `outils/`, puis recopié à l’identique dans chaque dossier de leçon qui l’utilise ;
+- chaque dossier de leçon ou de chapitre contient `main.py`, `article.qmd`, `script-video.md` et, pour le parcours 2D à partir de la leçon 2, `res.pyxres` ;
+- l’article est rendu à la demande par `quarto render article.qmd`, qui produit un HTML à côté du `.qmd` ; ce HTML de sortie n’est jamais commité ;
 - les chapitres du module bonus suivent la même règle de nommage (`NN-nom-court`) et ne contiennent aucun fichier de ressources ;
 - aucun fichier généré inutile (`__pycache__`, archives temporaires) ne doit être commité.
 
@@ -119,7 +121,7 @@ Règles :
 
 ### 6.2. Article
 
-L’article est écrit en HTML autonome, sans chaîne de production et sans ressource distante. Il suit la structure décrite en section 9.
+L’article est écrit en Quarto Markdown (`article.qmd`), sans ressource distante : la feuille de style commune `styles/article.css` est la seule dépendance, déclarée dans l’en-tête YAML du fichier. Il suit la structure décrite en section 9.
 
 ### 6.3. Script vidéo
 
@@ -395,48 +397,63 @@ Chaque bruitage occupe un canal distinct : 0 pour le saut, 1 pour la pièce, 2 p
 
 La ressource ne contient qu’une seule musique, le thème du niveau : une musique par écran suppose d’en composer une seconde dans l’éditeur.
 
-## 9. Conventions de l’article HTML
+## 9. Conventions de l’article Quarto
 
-### 9.1. Structure de page
+### 9.1. Structure du fichier
 
-```html
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>…</title>
-  <meta name="description" content="…">
-  <link rel="stylesheet" href="../styles/article.css">
-</head>
-<body>
-  <article class="lesson">
-    <header class="lesson-header">…</header>
-    <nav class="lesson-toc">…</nav>
-    …
-  </article>
-</body>
-</html>
+Chaque article est un fichier `article.qmd`, rendu par Quarto (`quarto render article.qmd`). Il s’ouvre sur un en-tête YAML qui fixe la langue, la description et la feuille de style, puis déclare tout le corps dans un div `.lesson`, pour retrouver les styles de `styles/article.css`.
+
+```yaml
+---
+description: "…"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+```
+
+```markdown
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon N
+:::
+
+# Titre de la leçon
+
+::: {.lesson-subtitle}
+Sous-titre de la leçon
+:::
+:::
+
+## Présentation {#presentation}
+…
+::::
 ```
 
 Règles :
 
-- un seul `h1`, placé dans `header.lesson-header` ;
-- sections en `h2`, sous-sections en `h3`, sous-sous-sections en `h4` ;
-- identifiants de section en minuscules sans accent, par exemple `la-taille-de-la-fenetre-a-la-nuit-du-code` ;
-- sommaire `nav.lesson-toc` reprenant les `h2` ;
-- blocs de code dans `<pre><code class="language-python">`, contenu échappé ;
-- tableaux dans `<div class="table-wrapper">` puis `<table>`, avec `<thead>` ;
+- un seul `h1`, dans le div `.lesson-header`, accompagné de l’étiquette et du sous-titre ;
+- sections en `##`, sous-sections en `###`, sous-sous-sections en `####` ;
+- identifiant explicite sur chaque section, en minuscules sans accent : `## Ce qui change {#ce-qui-change}` ;
+- le sommaire n’est plus écrit à la main : `format.html.toc: true` le produit, avec les identifiants des `##` ;
+- blocs de code dans des clôtures ` ```python `, contenu identique, à l’octet près, à celui de `main.py` ;
+- tableaux en tableaux Markdown à barres verticales, sans `div` d’enrobage ;
+- aucune balise HTML dans le corps, hors des blocs de code ;
 - aucune ressource distante : pas de CDN, pas de police, pas de script, pas d’image externe ;
-- aucun style en ligne : toute la mise en forme est dans `styles/article.css`.
+- aucun style en ligne : toute la mise en forme reste dans `styles/article.css`.
 
 ### 9.2. Encadrés
 
-```html
-<aside class="callout callout-note">
-  <p class="callout-title">Titre de l’encadré</p>
-  <p>Texte de l’encadré.</p>
-</aside>
+```markdown
+::: {.callout-note title="Titre de l’encadré"}
+
+Texte de l’encadré.
+
+:::
 ```
 
 | Classe | Usage |
@@ -446,7 +463,9 @@ Règles :
 | `callout-warning` | erreur fréquente, piège |
 | `callout-important` | règle à ne pas modifier |
 
-Une nouvelle variante suppose l’ajout de la classe et de son style dans `styles/article.css`, pas d’un style ponctuel dans la page.
+- Le titre tient dans l’attribut `title` : pas de mise en forme, pas de retour à la ligne, pas d’élision avec apostrophe droite.
+- Un encadré peut contenir plusieurs paragraphes, une liste ou un bloc de code, séparés par des lignes vides.
+- Une nouvelle variante suppose l’ajout de la classe et de son style dans `styles/article.css`, pas d’un style ponctuel dans la page.
 
 ### 9.3. Contenu attendu
 
@@ -516,7 +535,7 @@ Règles :
 3. Partir du `main.py` de la leçon précédente et n’ajouter que les changements annoncés.
 4. Mettre à jour `res.pyxres` par le script de génération si la leçon ajoute des ressources, puis recopier le fichier dans le dossier. Le module bonus n’a pas d’étape 4 : ses chapitres ne chargent aucune ressource.
 5. Écrire `main.py`, puis vérifier qu’il se compile et respecte les conventions de la section 7.
-6. Écrire `article.html` en réutilisant `styles/article.css`.
+6. Écrire `article.qmd` en réutilisant `styles/article.css`, puis le rendre avec `quarto render` pour vérifier la mise en page.
 7. Écrire `script-video.md`.
 8. Exécuter les vérifications de la section 13.
 9. Mettre à jour le tableau d’état de ce fichier.
@@ -530,19 +549,25 @@ python -m py_compile cours/pyxel-platformer/NN-lecon/main.py
 # 2. Ressources reproductibles
 python cours/pyxel-platformer/outils/generer_ressources.py
 cmp cours/pyxel-platformer/outils/res.pyxres cours/pyxel-platformer/NN-lecon/res.pyxres
+
+# 3. Articles et scripts cohérents avec main.py
+python cours/pyxel-platformer/outils/verifier_articles.py
 ```
+
+Le script `verifier_articles.py` contrôle les quatorze livrables : bloc « Le code complet » de l’article et bloc « Code final » du script identiques à `main.py`, blocs de code et divs Quarto appariés, tableaux réguliers, absence de balise HTML hors des blocs de code, apostrophes typographiques, lignes de code de 79 colonnes au plus et chaînes ASCII.
 
 Pour le module bonus, l’étape 2 ne s’applique pas : il n’y a pas de `res.pyxres`. La place est prise par un test de logique qui rejoue chaque `main.py` sur un stub de `pyxel` et de `pyxel.cube`, et qui contrôle les positions, les transformations, la caméra, le score et les textes affichés.
 
 Vérifier également, par lecture ou par script :
 
 - le code de l’article est identique à `main.py` ;
-- les balises HTML sont équilibrées et aucun Markdown résiduel ne subsiste (`#`, `|`, `:::`, `**`) ;
-- les liens de la feuille de style et des ancres sont valides ;
+- les divs Quarto sont appariés et l’en-tête YAML ne cite que `styles/article.css` ;
+- les identifiants de section sont uniques, en minuscules sans accent, et servent d’ancres au sommaire ;
+- les tableaux Markdown ont le même nombre de cellules sur chaque ligne ;
 - le script vidéo décrit le même code que l’article ;
 - la fenêtre mesure 256 × 256 et le niveau 64 × 32 tuiles ;
 - les textes passés à `pyxel.text()` ne contiennent que des caractères ASCII ;
-- le dossier d'une leçon ne contient que `main.py`, `res.pyxres`, `article.html` et `script-video.md` ; un chapitre du module bonus ne contient que `main.py`, `article.html` et `script-video.md` ;
+- le dossier d'une leçon ne contient que `main.py`, `res.pyxres`, `article.qmd` et `script-video.md` ; un chapitre du module bonus ne contient que `main.py`, `article.qmd` et `script-video.md` ;
 - aucun fichier généré inutile n’est ajouté au dépôt.
 
 Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’indiquer explicitement et limiter la validation à ce qui est vérifiable.
@@ -560,6 +585,8 @@ Si Pyxel ne peut pas être exécuté dans l’environnement de production, l’i
 - Reprendre l’architecture des exemples officiels de Pyxel : certains n’attribuent pas de méthode `draw()` à chaque élément.
 - Réimposer `Game.update()` / `Game.draw()` au module bonus : Pyxel Cube utilise `on_update()` / `on_draw()` sur des nœuds.
 - Charger un fichier `.glb`, une image ou une police dans les chapitres du module bonus.
+- Écrire un article en HTML : les articles sont des fichiers `article.qmd` rendus par Quarto.
+- Mélanger plusieurs formats d’article dans le même dossier, ou conserver un `article.html` à côté du `.qmd`.
 - Produire une leçon sans son code exécutable et vérifié.
 
 ## 15. Quand une règle change

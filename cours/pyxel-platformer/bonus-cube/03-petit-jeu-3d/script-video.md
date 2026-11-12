@@ -525,7 +525,7 @@ active = False pour figer
 - Provoquer les trois oublis de remise à zéro, sans couper, puis corriger.
 - Montrer une fois le HUD dessiné avant la scène, pour rendre l’ordre visible.
 - Terminer sur le jeu en mouvement, pas sur le code.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

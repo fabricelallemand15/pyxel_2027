@@ -498,7 +498,7 @@ saut impossible                -> was_falling lu après l’appel
 - Afficher en incrustation les deux versions de la mise à jour, avant et après l’introduction de `move_player()`.
 - Faire apparaître le tableau des arguments de `collide()` au moment de l’écriture de la méthode.
 - Garder l’affichage `Au sol` visible pendant toute la phase de vérification.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 

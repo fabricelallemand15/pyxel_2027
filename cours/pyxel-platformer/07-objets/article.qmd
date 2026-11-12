@@ -1,0 +1,629 @@
+---
+description: "Créer des pièces et des ennemis, les ranger dans des listes et appeler update() et draw() sur chaque objet"
+lang: fr
+format:
+  html:
+    css: ../styles/article.css
+    toc: true
+    toc-title: "Sommaire"
+---
+
+:::: {.lesson}
+::: {.lesson-header}
+::: {.lesson-label}
+Formation Pyxel · Leçon 7
+:::
+
+# Ajouter plusieurs types d’objets
+
+::: {.lesson-subtitle}
+Créer des pièces et des ennemis, les ranger dans des listes et appeler update() et draw() sur chaque objet
+:::
+
+:::
+
+## Présentation {#presentation}
+
+Le jeu compte maintenant un joueur, un niveau solide et des règles de déplacement. Il manque les objets qui font vivre un platformer : des pièces à ramasser et des ennemis qui circulent.
+
+Ces objets ne sont pas des cases du décor. Une pièce peut disparaître, un ennemi se déplacer, une caisse s’ouvrir : chacun a ses propres données et son propre comportement. La leçon crée donc deux nouvelles classes et range leurs instances dans des listes.
+
+Les neuf pièces du niveau sont déjà dessinées dans la tilemap. Le programme les retire du décor au démarrage et les transforme en objets : une tuile ne peut pas être ramassée, un objet le pourra dès la leçon suivante.
+
+Deux ennemis entrent en scène. Ils font les cent pas sur le sol et sur la plateforme du milieu, sans encore réagir au joueur.
+
+## Objectifs {#objectifs}
+
+À la fin de la leçon, vous devez pouvoir :
+
+1. écrire une classe qui décrit un objet du jeu ;
+2. créer plusieurs instances d’une même classe ;
+3. lire une tilemap pour placer des objets ;
+4. ranger des objets dans une liste ;
+5. appeler `update()` et `draw()` sur chaque objet d’une liste ;
+6. distinguer le décor, fait de tuiles, des objets, faits d’instances.
+
+## Ce qui change {#ce-qui-change}
+
+| Élément | Leçon 6 | Leçon 7 |
+| --- | --- | --- |
+| Classes | `Level`, `Player`, `Game` | ajout de `Coin` et `Enemy` |
+| `Level` | tilemap et collisions | ajout de `take_coins()` |
+| `Game` | un joueur et un niveau | deux listes d’objets et leurs boucles |
+| Ressource | tuiles du joueur, du décor, de la pièce et du buisson | ajout de la tuile `(4, 0)`, l’ennemi |
+| Affichage | état « au sol » | nombre de pièces et d’ennemis |
+| Déplacement du joueur | collisions avec la tilemap | inchangé |
+
+::: {.callout-note title="Les ennemis ne font pas encore de mal"}
+
+Un ennemi se déplace, mais il ne se passe rien lorsqu’il touche le joueur. Le contact, le score et la disparition des pièces arrivent dans la leçon suivante.
+
+:::
+
+## Le code complet {#le-code-complet}
+
+```python
+import pyxel
+
+
+SCREEN_WIDTH = 256
+SCREEN_HEIGHT = 256
+RESOURCE_FILE = "res.pyxres"
+
+TILE_SIZE = 8
+LEVEL_WIDTH = 32
+LEVEL_HEIGHT = 32
+GROUND_Y = 224
+SOLID_TILES = [
+    (0, 1),
+    (1, 1),
+    (2, 1),
+]
+COIN_TILE = (3, 1)
+ENEMY_TILE = (4, 0)
+EMPTY_TILE = (5, 5)
+
+PLAYER_WIDTH = 8
+PLAYER_HEIGHT = 8
+PLAYER_SPEED = 2
+GRAVITY = 1
+JUMP_SPEED = -11
+PLAYER_TILE_X = 0
+PLAYER_TILE_Y = 0
+PLAYER_START_X = 8
+PLAYER_START_Y = GROUND_Y - PLAYER_HEIGHT
+
+ENEMY_SPEED = 1
+
+BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+TEXT_COLOR = pyxel.COLOR_WHITE
+TRANSPARENT_COLOR = 0
+
+MUSIC = 0
+JUMP_SOUND = 0
+
+
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+
+    def update(self):
+        pass
+
+    def draw(self):
+        tile_x, tile_y = COIN_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Enemy:
+    def __init__(self, x, y, min_x, max_x):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+        self.dx = ENEMY_SPEED
+        self.min_x = min_x
+        self.max_x = max_x
+
+    def update(self):
+        self.x += self.dx
+
+        if self.x < self.min_x:
+            self.x = self.min_x
+            self.dx = ENEMY_SPEED
+        elif self.x > self.max_x:
+            self.x = self.max_x
+            self.dx = -ENEMY_SPEED
+
+    def draw(self):
+        tile_x, tile_y = ENEMY_TILE
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            tile_x * TILE_SIZE,
+            tile_y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Level:
+    def __init__(self):
+        self.tilemap = pyxel.tilemaps[0]
+        self.width = LEVEL_WIDTH * TILE_SIZE
+        self.height = LEVEL_HEIGHT * TILE_SIZE
+
+    def draw(self):
+        pyxel.bltm(
+            0,
+            0,
+            self.tilemap,
+            0,
+            0,
+            self.width,
+            self.height,
+        )
+
+    def move_player(self, x, y, dx, dy):
+        return self.tilemap.collide(
+            x,
+            y,
+            PLAYER_WIDTH,
+            PLAYER_HEIGHT,
+            dx,
+            dy,
+            SOLID_TILES,
+        )
+
+    def take_coins(self):
+        positions = []
+
+        for tile_y in range(LEVEL_HEIGHT):
+            for tile_x in range(LEVEL_WIDTH):
+                if self.tilemap.pget(tile_x, tile_y) == COIN_TILE:
+                    self.tilemap.pset(tile_x, tile_y, EMPTY_TILE)
+                    positions.append(
+                        (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
+                    )
+
+        return positions
+
+
+class Player:
+    def __init__(self, x, y, level):
+        self.x = x
+        self.y = y
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
+        self.dx = 0
+        self.dy = 0
+        self.is_on_ground = True
+        self.level = level
+
+    def update(self):
+        self.dx = 0
+
+        if pyxel.btn(pyxel.KEY_LEFT):
+            self.dx = -PLAYER_SPEED
+        elif pyxel.btn(pyxel.KEY_RIGHT):
+            self.dx = PLAYER_SPEED
+
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.is_on_ground:
+            self.dy = JUMP_SPEED
+            pyxel.play(0, JUMP_SOUND)
+
+        self.dy += GRAVITY
+
+        was_falling = self.dy > 0
+        self.dx, self.dy = self.level.move_player(
+            self.x,
+            self.y,
+            self.dx,
+            self.dy,
+        )
+
+        self.x += self.dx
+        self.x = pyxel.clamp(
+            self.x,
+            0,
+            pyxel.width - self.width,
+        )
+        self.y += self.dy
+
+        self.is_on_ground = was_falling and self.dy == 0
+
+    def draw(self):
+        pyxel.blt(
+            self.x,
+            self.y,
+            0,
+            PLAYER_TILE_X * TILE_SIZE,
+            PLAYER_TILE_Y * TILE_SIZE,
+            self.width,
+            self.height,
+            TRANSPARENT_COLOR,
+        )
+
+
+class Game:
+    def __init__(self):
+        pyxel.init(
+            SCREEN_WIDTH,
+            SCREEN_HEIGHT,
+            title="Chapitre 7 - plusieurs objets",
+        )
+        pyxel.load(RESOURCE_FILE)
+
+        self.level = Level()
+        self.player = Player(
+            PLAYER_START_X,
+            PLAYER_START_Y,
+            self.level,
+        )
+
+        self.coins = []
+        for x, y in self.level.take_coins():
+            self.coins.append(Coin(x, y))
+
+        self.enemies = [
+            Enemy(88, 216, 88, 160),
+            Enemy(104, 144, 104, 160),
+        ]
+
+        pyxel.playm(MUSIC, loop=True)
+        pyxel.run(self.update, self.draw)
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_Q):
+            pyxel.quit()
+
+        self.player.update()
+
+        for coin in self.coins:
+            coin.update()
+
+        for enemy in self.enemies:
+            enemy.update()
+
+    def draw(self):
+        pyxel.cls(BACKGROUND_COLOR)
+        self.level.draw()
+
+        for coin in self.coins:
+            coin.draw()
+
+        for enemy in self.enemies:
+            enemy.draw()
+
+        self.player.draw()
+
+        pyxel.text(
+            4,
+            4,
+            "Chapitre 7 - plusieurs objets",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            12,
+            "Gauche et droite : marcher, Espace : sauter",
+            TEXT_COLOR,
+        )
+        pyxel.text(
+            4,
+            20,
+            f"Restantes : {len(self.coins)}  Ennemis : {len(self.enemies)}",
+            TEXT_COLOR,
+        )
+
+
+Game()
+```
+
+## Comprendre le programme {#comprendre-le-programme}
+
+### Une classe, des instances
+
+Une pièce se décrit par quatre nombres : sa position et sa taille. La classe `Coin` les range dans un objet, et y ajoute le comportement attendu :
+
+```python
+class Coin:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = TILE_SIZE
+        self.height = TILE_SIZE
+
+    def update(self):
+        pass
+
+    def draw(self):
+        ...
+```
+
+La classe est un moule ; chaque appel `Coin(40, 176)` produit une instance indépendante, avec sa propre position. Neuf appels donnent neuf pièces.
+
+La largeur et la hauteur ne sont pas des paramètres : une pièce occupe toujours une tuile. `TILE_SIZE` suffit, et les valeurs restent cohérentes avec le décor.
+
+::: {.callout-tip title="Une méthode vide"}
+
+`Coin.update()` ne contient que `pass` : une pièce ne bouge pas et ne change pas d’état.
+
+La méthode existe quand même, pour que tous les objets du jeu se manipulent de la même façon. Le jour où une pièce doit clignoter ou tourner, il suffira de remplir cette méthode, sans toucher au reste du programme.
+
+:::
+
+### Du décor à l’objet
+
+Le niveau contient neuf tuiles de pièce, posées au-dessus des plateformes. La méthode `take_coins()` de `Level` les remplace par des positions :
+
+```python
+def take_coins(self):
+    positions = []
+
+    for tile_y in range(LEVEL_HEIGHT):
+        for tile_x in range(LEVEL_WIDTH):
+            if self.tilemap.pget(tile_x, tile_y) == COIN_TILE:
+                self.tilemap.pset(tile_x, tile_y, EMPTY_TILE)
+                positions.append(
+                    (tile_x * TILE_SIZE, tile_y * TILE_SIZE),
+                )
+
+    return positions
+```
+
+La double boucle parcourt les 32 × 32 cases du niveau, soit 1 024 lectures. Deux opérations s’enchaînent pour chaque pièce trouvée :
+
+- `pset()` remplace la tuile de pièce par une tuile transparente : la pièce disparaît du dessin ;
+- `append()` ajoute la position en pixels, calculée à partir des coordonnées de la case.
+
+Sans l’effacement, chaque pièce existerait deux fois : une tuile du décor et un objet superposé. Les deux se ressemblent, mais seule la seconde pourra être ramassée, et la tuile resterait visible après la disparition de l’objet.
+
+::: {.callout-note title="Effacement en mémoire"}
+
+`pset()` modifie la tilemap chargée en mémoire, pas le fichier `res.pyxres`. Relancer le programme recharge les ressources d’origine : les pièces du décor reviennent, et sont de nouveau transformées en objets.
+
+:::
+
+### Lire la tilemap, pas la deviner
+
+Le programme ne sait pas où sont les pièces : il les cherche, ligne par ligne, de haut en bas. L’ordre de la liste suit donc cet ordre de lecture : les trois pièces de la plateforme haute d’abord, puis celles du milieu, puis celles du bas.
+
+| Pièce | Case | Position en pixels |
+| --- | --- | --- |
+| Plateforme haute | (24, 14), (26, 14), (28, 14) | (192, 112), (208, 112), (224, 112) |
+| Plateforme du milieu | (14, 18), (16, 18), (18, 18) | (112, 144), (128, 144), (144, 144) |
+| Plateforme basse | (5, 22), (7, 22), (9, 22) | (40, 176), (56, 176), (72, 176) |
+
+La position verticale d’une pièce est celle du haut de sa case : la ligne 22 donne `22 × 8 = 176`. La pièce repose ainsi sur la plateforme de la ligne 23, dont le dessus se trouve à 184.
+
+### Une liste d’objets
+
+`Game` construit sa liste de pièces avec la valeur renvoyée par le niveau :
+
+```python
+self.coins = []
+for x, y in self.level.take_coins():
+    self.coins.append(Coin(x, y))
+```
+
+`positions` contient des couples de coordonnées ; `x, y in` les sépare, et chaque couple fournit les arguments d’un nouveau `Coin`. La liste ne contient pas des nombres, mais des objets.
+
+Les ennemis, eux, ne viennent pas du décor : ils sont posés à la main, comme le joueur.
+
+```python
+self.enemies = [
+    Enemy(88, 216, 88, 160),
+    Enemy(104, 144, 104, 160),
+]
+```
+
+Les deux écritures se complètent : une liste construite par une boucle quand les objets viennent des données du niveau, une liste écrite en clair quand le programmeur choisit les positions.
+
+### Les boucles de mise à jour et de dessin
+
+Le jeu n’appelle plus chaque objet par son nom : il parcourt les listes.
+
+```python
+for coin in self.coins:
+    coin.update()
+
+for enemy in self.enemies:
+    enemy.update()
+```
+
+Et de la même façon pour le dessin. Ajouter une dixième pièce ne demande alors aucune ligne de plus dans `update()` ni dans `draw()` : il suffit de l’ajouter à la liste.
+
+La variable de boucle change de nom à chaque tour : `coin` désigne successivement chacun des neuf objets. C’est le même mécanisme que pour parcourir une liste de nombres.
+
+::: {.callout-tip title="Deux boucles plutôt qu’une seule"}
+
+Pièces et ennemis sont rangés dans deux listes séparées, donc parcourus par deux boucles. Une liste unique mélangerait les types d’objets et obligerait à tester la classe de chacun avant d’appeler ses méthodes.
+
+:::
+
+### Un ennemi qui fait les cent pas
+
+La classe `Enemy` ressemble à `Coin`, avec deux attributs de plus : une vitesse et des bornes.
+
+```python
+def update(self):
+    self.x += self.dx
+
+    if self.x < self.min_x:
+        self.x = self.min_x
+        self.dx = ENEMY_SPEED
+    elif self.x > self.max_x:
+        self.x = self.max_x
+        self.dx = -ENEMY_SPEED
+```
+
+L’ennemi avance de `dx` à chaque image. En atteignant une borne, il est replacé dessus et repart dans l’autre sens. `min_x` et `max_x` sont les positions autorisées du bord gauche de son rectangle.
+
+| Ennemi | Position de départ | Allée et retour |
+| --- | --- | --- |
+| Sur le sol | (88, 216) | de 88 à 160 |
+| Sur la plateforme du milieu | (104, 144) | de 104 à 160 |
+
+L’ennemi de la plateforme est posé à la verticale 144 : la plateforme occupe la ligne 19, donc son dessus est à 152, et `144 + 8 = 152`. Sa course est bornée à l’intérieur de la plateforme pour qu’il ne marche pas dans le vide : un ennemi n’utilise pas encore `collide()`.
+
+### L’ordre du dessin
+
+`Game.draw()` empile les couches dans un ordre précis :
+
+1. le fond, avec `pyxel.cls()` ;
+2. le niveau et sa tilemap ;
+3. les pièces ;
+4. les ennemis ;
+5. le joueur ;
+6. les textes, toujours lisibles.
+
+Ce qui est dessiné en dernier recouvre le reste. Le joueur passe ainsi devant les pièces lorsqu’il les frôle, et les textes restent nets au-dessus du décor.
+
+### Les tuiles utilisées
+
+| Élément | Tuile | Position en pixels dans la banque |
+| --- | --- | --- |
+| Pièce | `(3, 1)` | `(24, 8)` |
+| Ennemi | `(4, 0)` | `(32, 0)` |
+
+`COIN_TILE` et `ENEMY_TILE` gardent les coordonnées de tuiles ; la multiplication par `TILE_SIZE` donne les coordonnées en pixels attendues par `pyxel.blt()`. Les deux valeurs se lisent d’un coup d’œil, sans nombre magique.
+
+::: {.callout-note title="Les accents à l’écran"}
+
+Le compteur affiche « Restantes » et non « Pièces » : la police de Pyxel ne dessine pas le è (voir la leçon 1).
+
+:::
+
+## Vérifier le résultat {#verifier-le-resultat}
+
+| Point à vérifier | Résultat attendu |
+| --- | --- |
+| Au démarrage | `Restantes : 9 Ennemis : 2` |
+| Les pièces | Neuf pièces jaunes posées sur les trois plateformes |
+| La tilemap | Aucune pièce dessinée par le décor : les pièces sont des objets |
+| L’ennemi du sol | Va et vient entre 88 et 160, posé sur le sol |
+| L’ennemi de la plateforme | Va et vient entre 104 et 160, sans quitter la plateforme |
+| Le joueur | Se déplace, saute et s’arrête sur le décor comme avant |
+| Le contact | Rien ne se passe : ni score, ni dégât |
+
+Un ennemi qui traverse une pièce la masque un instant : c’est normal, il est dessiné après elle. Le joueur, lui, passe devant tout le monde.
+
+## Erreurs fréquentes {#erreurs-frequentes}
+
+::: {.callout-warning title="Les objets sont recréés à chaque image"}
+
+Placer la construction des listes dans `draw()` ou dans `update()` recrée neuf pièces et deux ennemis soixante fois par seconde : les ennemis repartent de leur position initiale et rien ne progresse.
+
+Les listes se construisent une fois, dans `Game.__init__()`.
+
+:::
+
+::: {.callout-warning title="Les tuiles de pièce ne sont pas effacées"}
+
+Sans `pset()`, la tuile du décor reste sous l’objet. Tout semble correct au départ, mais une pièce ramassée laisserait son dessin derrière elle, comme un fantôme.
+
+:::
+
+::: {.callout-warning title="Une liste parcourue sans être appelée"}
+
+Remplir `self.enemies` sans écrire les deux boucles de `update()` donne des ennemis immobiles : les objets existent, mais personne ne les fait avancer.
+
+:::
+
+::: {.callout-warning title="Tuiles et pixels confondus"}
+
+Passer `COIN_TILE` directement à `pyxel.blt()` affiche une zone située en haut à gauche de la banque d’images : `blt()` attend des pixels, pas des cases.
+
+```python
+pyxel.blt(x, y, 0, COIN_TILE, 8, 8, 0)
+```
+
+:::
+
+::: {.callout-warning title="La liste est modifiée pendant le parcours"}
+
+Retirer un élément d’une liste dans la boucle qui la parcourt fait sauter l’élément suivant :
+
+```python
+for coin in self.coins:
+    self.coins.remove(coin)
+```
+
+La leçon suivante montre comment supprimer proprement les objets ramassés, en reconstruisant la liste après le parcours.
+
+:::
+
+## Expérimentations {#experimentations}
+
+Ces modifications sont facultatives.
+
+### Ajouter une pièce dans l’éditeur
+
+Placez une tuile de pièce dans la tilemap, au-dessus du sol par exemple, puis relancez le programme.
+
+```python
+self.tilemap.pset(12, 27, COIN_TILE)
+```
+
+Cette ligne, ajoutée au début de `take_coins()`, produit le même effet sans ouvrir l’éditeur. Le compteur affiche `Restantes : 10` : aucune autre ligne n’a changé.
+
+### Un troisième ennemi
+
+```python
+Enemy(192, 112, 192, 224),
+```
+
+Ajouté à la liste, cet ennemi patrouille sur la plateforme haute. Sa position verticale est 112, car la plateforme occupe la ligne 15 et son dessus se trouve à 120.
+
+### Changer la vitesse
+
+```python
+ENEMY_SPEED = 2
+```
+
+Les allées et retours deviennent deux fois plus rapides. Avec une vitesse supérieure à la largeur d’une tuile, un ennemi pourrait sauter par-dessus une borne : les tests de bornes utilisent `<` et `>`, pas une égalité.
+
+### Faire clignoter les pièces
+
+```python
+def update(self):
+    self.visible = pyxel.frame_count // 15 % 2 == 0
+```
+
+Et dans `draw()`, n’appeler `pyxel.blt()` que si `self.visible` est vrai. La méthode `update()` de `Coin` sert enfin à quelque chose, sans modifier le reste du jeu.
+
+### Compter les objets
+
+```python
+pyxel.text(4, 28, f"Cases libres : {len(self.coins)}", TEXT_COLOR)
+```
+
+`len()` donne le nombre d’éléments d’une liste. Ce compteur suivra automatiquement les pièces ramassées à la leçon suivante.
+
+## À retenir {#a-retenir}
+
+- Une classe décrit un type d’objet ; chaque instance a ses propres valeurs.
+- Les objets d’un même type se rangent dans une liste.
+- Une liste d’objets se parcourt avec `for objet in liste`, pour appeler `update()` puis `draw()`.
+- `pget()` lit une case, `pset()` la remplace : le niveau peut servir de source de données.
+- Une tuile appartient au décor, un objet est une instance : le premier est fixe, le second peut disparaître.
+- Une méthode `update()` peut rester vide : c’est l’interface commune de tous les objets.
+- L’ordre du dessin décide de ce qui passe devant quoi.
+
+Dans la prochaine leçon, le jeu gagne des règles : ramasser une pièce, marquer des points, perdre au contact d’un ennemi et retirer proprement les objets de leurs listes.
+::::

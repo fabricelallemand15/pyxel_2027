@@ -476,7 +476,7 @@ joueur flottant       -> GROUND_Y incohérent avec la tilemap
 - Montrer le tableau de progression de `dy` pendant l’explication de la gravité.
 - Laisser le son du saut audible sans le renforcer au montage.
 - Montrer chaque erreur en l’exécutant vraiment, puis rétablir le code avant de continuer.
-- Conserver le même code final que l’article `article.html`.
+- Conserver le même code final que l’article `article.qmd`.
 
 ## Vérification avant publication
 
