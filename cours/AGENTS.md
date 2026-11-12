@@ -61,8 +61,9 @@ Le dépôt public historique en Pyxel 1.8.8 n’est pas la référence technique
 | 10 — Audio, interface, états | `10-audio-et-scenes/` | produite |
 | 11 — Préparation Nuit du Code | `11-nuit-du-code/` | produite |
 | Bonus — Pyxel Cube (3 chapitres) | `bonus-cube/` | produite |
+| Présentation — vidéo d’accroche | `presentation/` | produite |
 
-Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.qmd`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute. Le module bonus fait exception : ses trois chapitres ne chargent aucune ressource, donc aucun fichier `res.pyxres` ne les accompagne.
+Une leçon n’est terminée que si ses trois livrables existent : `main.py`, `article.qmd`, `script-video.md`. À partir de la leçon 2, `res.pyxres` s’y ajoute. Le module bonus fait exception : ses trois chapitres ne chargent aucune ressource, donc aucun fichier `res.pyxres` ne les accompagne. La vidéo de présentation de la formation (`presentation/`) ne contient qu’un `script-video.md` : elle ne montre aucun programme et n’a donc ni `main.py` ni `article.qmd`.
 
 ## 5. Arborescence et nommage
 
@@ -98,6 +99,8 @@ cours/
         article.qmd
         script-video.md
         main.py
+    presentation/
+      script-video.md
 ```
 
 Règles :
@@ -490,7 +493,7 @@ Le script est en Markdown et comporte les parties suivantes, dans cet ordre :
 2. intention pédagogique ;
 3. objectifs annoncés aux élèves ;
 4. préparation de l’enregistrement ;
-5. code final complet ;
+5. code final complet, remplacé par le texte de la narration dans une vidéo de présentation, qui ne montre aucun programme ;
 6. découpage minuté ;
 7. consignes de montage ;
 8. vérification avant publication.

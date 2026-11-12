@@ -1116,6 +1116,8 @@ Structure recommandée :
 
 La vidéo ne devra pas simplement lire l'article. Elle montrera les décisions de programmation et le comportement du jeu.
 
+Une vidéo de présentation de la formation complète, d’environ trois minutes, est produite à part, dans `cours/pyxel-platformer/presentation/`. Elle ne montre aucun code : elle présente le jeu obtenu, l’organisation du parcours et les objectifs, puis renvoie à la première leçon.
+
 ## 8.2. Article
 
 Les articles sont écrits en Quarto Markdown, un fichier `article.qmd` par leçon. Chaque fichier est autonome : son en-tête YAML déclare la langue, la description et la feuille de style commune `cours/pyxel-platformer/styles/article.css`. Le rendu se fait à la demande, avec `quarto render article.qmd` ; il n’y a ni projet Quarto ni configuration globale à maintenir.
